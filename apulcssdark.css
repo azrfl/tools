@@ -1,0 +1,242 @@
+
+
+/* ==============================
+   1. Theme Variables Dark
+   ============================== */
+
+:root {
+  /* Base colors */
+  --color-bg: #0f172a;          /* slate-900 */
+  --color-text: #e5e7eb;        /* slate-200 */
+  --color-muted: #94a3b8;       /* slate-400 */
+
+  /* Theme (change once, affects all) */
+  --color-theme: 96 165 250;    /* lighter blue for dark bg */
+  --color-theme-soft: rgba(var(--color-theme), 0.18);
+  --color-theme-medium: rgba(var(--color-theme), 0.25);
+
+  /* Borders & radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --border-color: #1e293b;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-focus: 0 0 0 3px var(--color-theme-soft);
+
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 0.75rem;
+  --space-lg: 1rem;
+
+  /* Motion */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+}
+
+/* ==============================
+   2. Reset & Base
+   ============================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.5;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+body {
+  margin: 0;
+}
+
+img, svg, video {
+  max-width: 100%;
+  display: block;
+}
+
+/* ==============================
+   3. Typography
+   ============================== */
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.25;
+  margin: 0 0 var(--space-md);
+}
+
+p {
+  margin: 0 0 var(--space-md);
+  color: var(--color-text);
+}
+
+small {
+  color: var(--color-muted);
+}
+
+/* ==============================
+   4. Links
+   ============================== */
+a {
+  color: rgb(var(--color-theme));
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* ==============================
+   5. Forms
+   ============================== */
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+     background: #020617;
+  color: var(--color-text);
+  transition: border-color var(--duration-fast) var(--ease),
+              box-shadow var(--duration-fast) var(--ease);
+}
+
+input[type="number"] {
+  text-align: right;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: rgb(var(--color-theme));
+  box-shadow: var(--shadow-focus);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-muted);
+}
+
+/* ==============================
+   6. Buttons
+   ============================== */
+button {
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: rgb(var(--color-theme));
+  color: #fff;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: background var(--duration-normal) var(--ease),
+              transform var(--duration-fast) var(--ease),
+              box-shadow var(--duration-fast) var(--ease);
+}
+
+button:hover {
+  background: rgba(var(--color-theme), 0.9);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ==============================
+   7. Tables
+   ============================== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: transparent;
+}
+
+th,
+td {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+}
+
+th {
+  background: var(--color-theme-soft);
+  color: rgb(var(--color-theme));
+  font-weight: 600;
+}
+
+/* ==============================
+   8. Lists
+   ============================== */
+ul, ol {
+  padding-left: 1.25rem;
+}
+
+li {
+  margin-bottom: var(--space-xs);
+}
+
+/* ==============================
+   9. Cards & Sections
+   ============================== */
+section, article {
+  margin-bottom: var(--space-lg);
+}
+
+/* ==============================
+   10. Visibility & Transitions
+   ============================== */
+[hidden] {
+  display: none !important;
+}
+
+.fade {
+  transition: opacity var(--duration-normal) var(--ease),
+              transform var(--duration-normal) var(--ease);
+}
+
+.fade[hidden] {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+/* ==============================
+   11. Date Inputs
+   ============================== */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  padding-right: var(--space-md);
+}
+
+button#theme-toggle {
+  background: transparent;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+button#theme-toggle:hover {
+  background: var(--color-theme-soft);
+}
+
+button#theme-toggle img {
+  display: block;
+}
