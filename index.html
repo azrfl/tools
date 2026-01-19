@@ -139,7 +139,7 @@
 
     textarea {
       resize: vertical;
-      width: 200px
+      width: 90%
     }
 
     .chip {
@@ -355,10 +355,12 @@
 
 
         <label>Recess Text:</label>
-        <input type="text" id="breakText" placeholder="Lunch" />
+        <input type="text" id="breakText" placeholder="Lunch"  style="width:110px" />
 
         <label>2nd Half Start:</label>
         <input type="number" id="breakAt" min="1" />
+          <label>Header / Class Name</label>
+      <input id="headerText" />
       </div>
 
 
@@ -381,10 +383,9 @@
 
         <tbody id="dayContent"></tbody>
       </table>
-      <label>Header</label>
-      <input id="headerText" />
+
       <br>
-      <label>Footer</label>
+      <label>Footer / Remark</label> <br>
       <textarea id="footerText"></textarea>
     </div>
 
@@ -703,6 +704,8 @@
 
       $("prevHeader").textContent = state.header;
       $("prevFooter").textContent = state.footer;
+      $("headerText").value = state.header;
+      $("footerText").value = state.footer;
 
       const t = $("table"); t.innerHTML = ""; t.style.borderColor = state.styles.border;
 
@@ -823,3 +826,4 @@
 
 
 </html>
+
