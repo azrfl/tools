@@ -11,29 +11,24 @@
       --color-bg: #ffffff;
       --color-text: #1f2933;
       --color-muted: #6b7280;
-
-      /* Theme (change once, affects all) */
+      /* Theme  */
       --color-theme: 59 130 246;
       /* blue-500 as RGB */
       --color-theme-soft: rgba(var(--color-theme), 0.12);
       --color-theme-medium: rgba(var(--color-theme), 0.25);
-
       /* Borders & radius */
       --radius-sm: 6px;
       --radius-md: 10px;
       --radius-lg: 14px;
       --border-color: #e5e7eb;
-
       /* Shadows */
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
       --shadow-focus: 0 0 0 3px var(--color-theme-soft);
-
       /* Spacing */
       --space-xs: 0.25rem;
       --space-sm: 0.5rem;
       --space-md: 0.75rem;
       --space-lg: 1rem;
-
       /* Motion */
       --ease: cubic-bezier(0.4, 0, 0.2, 1);
       --duration-fast: 120ms;
@@ -58,6 +53,7 @@
       border-radius: 8px;
       padding: 16px;
       box-shadow: 0 4px 16px rgba(0, 0, 0, .1);
+      gap: 16px;
     }
 
     h2 {
@@ -86,7 +82,6 @@
       min-width: 60px
     }
 
-
     input,
     select,
     textarea,
@@ -100,7 +95,6 @@
       height: 30px;
       border-radius: 15px;
     }
-
 
     input,
     select,
@@ -135,7 +129,6 @@
     select {
       max-width: fit-content;
     }
-
 
     textarea {
       resize: vertical;
@@ -215,8 +208,6 @@
     }
 
     input[type="color"] {
-
-
       cursor: pointer;
       /* Change cursor to pointer on hover */
     }
@@ -233,17 +224,20 @@
 
     .bgpicker {
       padding: 4px;
-
       border: 0px solid #727070;
       ;
-
       /* Add rounded corners */
       background-color: #f0f0f0;
     }
 
-
     #timeInputs input {
       width: 60px
+    }
+
+    #preview {
+      height: fit-content;
+      max-width: max-content;
+      overflow-x: scroll;
     }
 
     .labelstart {
@@ -273,7 +267,8 @@
       #preview {
         height: 400px;
         width: 1000px;
-
+        max-width: max-content;
+        overflow: hidden;
       }
 
       .container {
@@ -283,16 +278,12 @@
       }
 
       /* ---- B&W MODE ONLY ---- */
-
       table,
       td,
       th,
       .dayCell {
         border: 2px solid #b5b5b5;
       }
-
-
-
 
       body.bw-print .dayCell,
       body.bw-print .timeCell {
@@ -307,9 +298,9 @@
       border: 1px solid transparent;
       background: rgb(var(--color-theme));
       color: #fff;
+      margin: 5px;
       cursor: pointer;
       box-shadow: var(--shadow-sm);
-
     }
 
     .chip button {
@@ -333,148 +324,151 @@
     .rowt td select {
       border: none;
     }
+
+    .note {
+      color: #1f2933;
+      font-size: 8px;
+    }
+
+    .wrap {
+      display: flex;
+      flex-direction: column;
+
+      label {
+        font-size: 12px;
+      }
+    }
+
+    #subjectStyleControls .row div {
+      box-shadow: 2px 2px 3px #ccc;
+    }
   </style>
-
   <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 
 <body>
-
   <div class="container">
-
     <!-- A -->
-    <div class="card  whide">
+    <div class="card whide">
       <h2>Jadual Sekolah Builder</h2>
-
+      <hr>
+      <div class="note">©github.com/azrfl | Version 1.0.1 | 2026</div>
+      <hr>
       <div class="row">
-        <label class="labelstart">Day format</label>
-        <select id="dayFormat"></select>
+        <div class="wrap">
+          <label>Day format</label>
+          <select id="dayFormat"></select>
+        </div>
+        <div class="wrap"> <label>Total blocks (incl. R):</label>
+          <input type="number" id="blocks" min="6" max="20" />
+        </div>
 
-        <label>Total blocks (incl. R):</label>
-        <input type="number" id="blocks" min="6" max="20" />
+        <div class="wrap"> <label>Recess Text:</label>
+          <input type="text" id="breakText" placeholder="Lunch" style="width:110px" />
+        </div>
 
+        <div class="wrap">
+          <label>2nd Half Start:</label>
+          <input type="number" id="breakAt" min="1" />
+        </div>
 
-        <label>Recess Text:</label>
-        <input type="text" id="breakText" placeholder="Lunch"  style="width:110px" />
+        <div class="wrap">
+        <label>Header / Class Name</label>
+        <input id="headerText" />
+        </div>
 
-        <label>2nd Half Start:</label>
-        <input type="number" id="breakAt" min="1" />
-          <label>Header / Class Name</label>
-      <input id="headerText" />
       </div>
-
-
-
       <div class="row">
-        <label class="labelstart">Subjects</label>
+        <div class="wrap">
+        <label>Subjects</label> 
+        <input id="subjectInput" placeholder="Enter Subject" /></div>
+        
+        <button onclick="showemoji()">😀</button>
+         </div>
 
-        <input id="subjectInput" placeholder="Enter Subject" /> <button onclick="showemoji()">😀</button>
+        <emoji-picker emoji-version="15.0" class="light" id="emojidiv" style="display:none"></emoji-picker>
+
         <div class="chips" id="subjectChips"></div>
-
-      </div>
-
-      <emoji-picker emoji-version="15.0" class="light" id="emojidiv" style="display:none"></emoji-picker>
+     
+      
       <br>
       <table>
         <thead>
           <tr id="timeInputs"></tr>
         </thead>
-
-
         <tbody id="dayContent"></tbody>
       </table>
-
       <br>
       <label>Footer / Remark</label> <br>
       <textarea id="footerText"></textarea>
     </div>
-
     <!-- B -->
     <div class="card whide">
       <h2>Styling</h2>
-
       <div id="subjectStyles"></div>
-
       <div class="row">
         <label>Day/Time font size</label>
         <input type="range" id="fsTime" min="8" max="18" />
         <label>Subject font size</label>
         <input type="range" id="fsSubject" min="8" max="24" />
       </div>
-
       <div id="subjectStyleControls"></div>
       <div style="display:none">
         <label>Border color</label>
         <input type="color" id="borderColor" />
       </div>
     </div>
-
     <!-- C -->
     <div class="card" id="preview">
       <h2 id="prevHeader"></h2>
       <table id="table"></table>
       <p id="prevFooter"></p>
     </div>
-
-
-
     <div class="card whide">
       <h2>Output</h2>
       <button onclick="printColor()">Print PDF (Color)</button>
       <button onclick="printBW()">Print PDF(B & W)</button>
-<button onclick="downloadDivAsPNG('preview', 'Jadual.png')">
-  Download PNG Image
-</button>
+      <button onclick="downloadDivAsPNG('preview', 'Jadual.png')">
+        Download PNG Image
+      </button>
     </div>
-
   </div>
   <script>
     const picker = document.querySelector('emoji-picker');
     const input = document.getElementById('subjectInput');
     const emojis = document.getElementById('emojidiv');
-
     picker.addEventListener('emoji-click', (event) => {
       const emoji = event.detail.unicode;
-
       const start = input.selectionStart ?? input.value.length;
       const end = input.selectionEnd ?? input.value.length;
-
       input.value =
         input.value.slice(0, start) +
         emoji +
         input.value.slice(end);
-
       const cursor = start + emoji.length;
       input.focus();
       input.setSelectionRange(cursor, cursor);
       emojis.style.display = "none"
     });
-
     function showemoji() {
       if (emojis.style.display == "block") {
         emojis.style.display = "none"
       }
       else { emojis.style.display = "block" }
-
-
     }
-
     function printColor() {
       document.body.classList.remove("bw-print");
       window.print();
     }
-
     function printBW() {
       document.body.classList.add("bw-print");
       window.print();
       setTimeout(() => document.body.classList.remove("bw-print"), 100);
     }
-
-
     const DAY_FORMATS = [
       { name: "ISNIN-JUMAAT", value: ["ISNIN", "SELASA", "RABU", "KHAMIS", "JUMAAT"] },
+      { name: "Isnin-Jumaat", value: ["Isnin", "Selasa", "Rabu", "Khamis", "Jumaat"] },
       { name: "ISN-JUM", value: ["ISN", "SEL", "RAB", "KHA", "JUM"] },
       { name: "I-J", value: ["I", "S", "R", "K", "J"] },
       { name: "Monday-Friday", value: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] },
@@ -482,164 +476,159 @@
       { name: "Sunday-Thursday", value: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"] }
     ];
     const samplestate =
-{
-    "dayFormat": 0,
-    "blocks": 12,
-    "breakAt": 5,
-    "breakText": "REHAT",
-    "times": ["7:25","7:55","8:25","8:55","9:25","9:45","10:15","10:45","11:15","11:45","12:15","12:45","1:15"
-    ],
-    "subjects": [ "جاوي", "BI💬", "AQH", "🎨PSV", "PJ⚽️", "MZ🎼", "👥👥", "SN🔬", "MT🧮", "BA💬", "TSM🔈️", "🩺PK", "KK👮", "SEJ", "ULUM", "RBT", "BM💬"
-    ],
-    "content": {
-
+    {
+      "dayFormat": 0,
+      "blocks": 12,
+      "breakAt": 5,
+      "breakText": "REHAT",
+      "times": ["7:25", "7:55", "8:25", "8:55", "9:25", "9:45", "10:15", "10:45", "11:15", "11:45", "12:15", "12:45", "1:15"
+      ],
+      "subjects": ["جاوي", "BI💬", "AQH", "🎨PSV", "PJ⚽️", "MZ🎼", "👥👥", "SN🔬", "MT🧮", "BA💬", "TSM🔈️", "🩺PK", "KK👮", "SEJ", "ULUM", "RBT", "BM💬"
+      ],
+      "content": {
         "ISNIN": [
-            "👥👥",
-            "جاوي",
-            "BI💬",
-            "BI💬",
-            "TJ",
-            "BM💬",
-            "BM💬",
-            "AQH",
-            "AQH",
-            "AQH",
-            "🎨PSV",
-            "🎨PSV"
+          "👥👥",
+          "جاوي",
+          "BI💬",
+          "BI💬",
+          "TJ",
+          "BM💬",
+          "BM💬",
+          "AQH",
+          "AQH",
+          "AQH",
+          "🎨PSV",
+          "🎨PSV"
         ],
         "SELASA": [
-            "MZ🎼",
-            "PJ⚽️",
-            "BM💬",
-            "BM💬",
-            "PER.",
-            "SN🔬",
-            "SN🔬",
-            "MT🧮",
-            "MT🧮",
-            "BI💬",
-            "BI💬"
+          "MZ🎼",
+          "PJ⚽️",
+          "BM💬",
+          "BM💬",
+          "PER.",
+          "SN🔬",
+          "SN🔬",
+          "MT🧮",
+          "MT🧮",
+          "BI💬",
+          "BI💬"
         ],
         "RABU": [
-            "BA💬",
-            "BA💬",
-            "BM💬",
-            "BM💬",
-            "",
-            "TSM🔈️",
-            "TSM🔈️",
-            "🩺PK",
-            "🩺PK",
-            "KK👮",
-            "KK👮",
-            "KK👮"
+          "BA💬",
+          "BA💬",
+          "BM💬",
+          "BM💬",
+          "",
+          "TSM🔈️",
+          "TSM🔈️",
+          "🩺PK",
+          "🩺PK",
+          "KK👮",
+          "KK👮",
+          "KK👮"
         ],
         "KHAMIS": [
-            "PJ⚽️",
-            "SEJ",
-            "SEJ",
-            "BA💬",
-            "",
-            "SN🔬",
-            "SN🔬",
-            "BI💬",
-            "BI💬",
-            "MT🧮",
-            "MT🧮"
+          "PJ⚽️",
+          "SEJ",
+          "SEJ",
+          "BA💬",
+          "",
+          "SN🔬",
+          "SN🔬",
+          "BI💬",
+          "BI💬",
+          "MT🧮",
+          "MT🧮"
         ],
         "JUMAAT": [
-            "BI💬",
-            "BI💬",
-            "ULUM",
-            "ULUM",
-            "",
-            "RBT",
-            "RBT",
-            "BM💬",
-            "BM💬",
-            "MT🧮"
+          "BI💬",
+          "BI💬",
+          "ULUM",
+          "ULUM",
+          "",
+          "RBT",
+          "RBT",
+          "BM💬",
+          "BM💬",
+          "MT🧮"
         ]
-
-    },
-    "header": "4 GIGIH (sample)",
-    "footer": "2026",
-    "styles": {
+      },
+      "header": "4 GIGIH (sample)",
+      "footer": "2026",
+      "styles": {
         "subjectBg": {
-            "🎨PSV": "hsl(1.5498411278855384,70%,85%)",
-            "جاوي": "#e39292",
-            "🇧🇮": "hsl(115.18329006305868,70%,85%)",
-            "💬BI": "hsl(145.2249674058503,70%,85%)",
-            "BI💬": "#c3e4f9",
-            "BM💬": "#9dfbdf",
-            "🥰AQH": "hsl(290.53322734053523,70%,85%)",
-            "AQH": "#13fc03",
-            "PJ⚽️": "#f2f2f2",
-            "MZ🎼": "hsl(314.7039909341056,70%,85%)",
-            "👥👥": "hsl(118.17244343699184,70%,85%)",
-            "SN🔬": "#3566f8",
-            "MT🧮": "#d1ffe5",
-            "عرب": "hsl(261.77666086609526,70%,85%)",
-            "BA💬": "#ff00d0",
-            "TAS🗣️": "hsl(34.65058713461855,70%,85%)",
-            "TSM🔈️": "hsl(215.64214037561592,70%,85%)",
-            "👨‍⚕️PK": "hsl(286.270549851156,70%,85%)",
-            "🩺PK": "hsl(316.8180099058607,70%,85%)",
-            "KK👮": "hsl(236.30525397790922,70%,85%)",
-            "SEJ": "hsl(100.59704551661656,70%,85%)",
-            "ULUM": "hsl(20.743083569617305,70%,85%)",
-            "RBT": "hsl(203.8869316759505,70%,85%)"
+          "🎨PSV": "hsl(1.5498411278855384,70%,85%)",
+          "جاوي": "#e39292",
+          "🇧🇮": "hsl(115.18329006305868,70%,85%)",
+          "💬BI": "hsl(145.2249674058503,70%,85%)",
+          "BI💬": "#c3e4f9",
+          "BM💬": "#9dfbdf",
+          "🥰AQH": "hsl(290.53322734053523,70%,85%)",
+          "AQH": "#13fc03",
+          "PJ⚽️": "#f2f2f2",
+          "MZ🎼": "hsl(314.7039909341056,70%,85%)",
+          "👥👥": "hsl(118.17244343699184,70%,85%)",
+          "SN🔬": "#3566f8",
+          "MT🧮": "#d1ffe5",
+          "عرب": "hsl(261.77666086609526,70%,85%)",
+          "BA💬": "#ff00d0",
+          "TAS🗣️": "hsl(34.65058713461855,70%,85%)",
+          "TSM🔈️": "hsl(215.64214037561592,70%,85%)",
+          "👨‍⚕️PK": "hsl(286.270549851156,70%,85%)",
+          "🩺PK": "hsl(316.8180099058607,70%,85%)",
+          "KK👮": "hsl(236.30525397790922,70%,85%)",
+          "SEJ": "hsl(100.59704551661656,70%,85%)",
+          "ULUM": "hsl(20.743083569617305,70%,85%)",
+          "RBT": "hsl(203.8869316759505,70%,85%)"
         },
         "subjectColor": {
-            "🎨PSV": "#000",
-            "جاوي": "#3a2727",
-            "🇧🇮": "#000",
-            "💬BI": "#000",
-            "BI💬": "#000",
-            "BM💬": "#000",
-            "🥰AQH": "#000",
-            "AQH": "#000",
-            "PJ⚽️": "#000",
-            "MZ🎼": "#000",
-            "👥👥": "#000",
-            "SN🔬": "#ffffff",
-            "MT🧮": "#000",
-            "عرب": "#000",
-            "BA💬": "#000",
-            "TAS🗣️": "#000",
-            "TSM🔈️": "#000",
-            "👨‍⚕️PK": "#000",
-            "🩺PK": "#000",
-            "KK👮": "#000",
-            "SEJ": "#000",
-            "ULUM": "#000",
-            "RBT": "#000"
+          "🎨PSV": "#000",
+          "جاوي": "#3a2727",
+          "🇧🇮": "#000",
+          "💬BI": "#000",
+          "BI💬": "#000",
+          "BM💬": "#000",
+          "🥰AQH": "#000",
+          "AQH": "#000",
+          "PJ⚽️": "#000",
+          "MZ🎼": "#000",
+          "👥👥": "#000",
+          "SN🔬": "#ffffff",
+          "MT🧮": "#000",
+          "عرب": "#000",
+          "BA💬": "#000",
+          "TAS🗣️": "#000",
+          "TSM🔈️": "#000",
+          "👨‍⚕️PK": "#000",
+          "🩺PK": "#000",
+          "KK👮": "#000",
+          "SEJ": "#000",
+          "ULUM": "#000",
+          "RBT": "#000"
         },
         "border": "#5c5c5c",
         "dayBg": {},
         "fs": {
-            "header": 12,
-            "time": 12,
-            "subject": 12,
-            "footer": 12
+          "header": 12,
+          "time": 12,
+          "subject": 12,
+          "footer": 12
         },
         "fsTime": 14,
         "fsSubject": 17
+      }
     }
-}
-
     const state = JSON.parse(localStorage.getItem("tt")) || samplestate
-     //{
-     //dayFormat: 0, blocks: 6, breakAt: 3, breakText: "LUNCH",
-     //times: Array(10).fill(""),
-     //subjects: [],
-     //content: {},
-     //header: "", footer: "",
-     //styles: { subjectBg: {}, subjectColor: {}, border: "#ccc", fsTime: 12, fsSubject: 12 }
-     //};
-
+    //{
+    //dayFormat: 0, blocks: 6, breakAt: 3, breakText: "LUNCH",
+    //times: Array(10).fill(""),
+    //subjects: [],
+    //content: {},
+    //header: "", footer: "",
+    //styles: { subjectBg: {}, subjectColor: {}, border: "#ccc", fsTime: 12, fsSubject: 12 }
+    //};
     const $ = id => document.getElementById(id);
     const save = () => { localStorage.setItem("tt", JSON.stringify(state)); render(); };
-
     function render() {
       $("dayFormat").innerHTML = DAY_FORMATS.map((d, i) => `<option value="${i}">${d.name}</option>`).join("");
       $("dayFormat").value = state.dayFormat;
@@ -649,7 +638,6 @@
       $("fsTime").value = state.styles.fsTime;
       $("fsSubject").value = state.styles.fsSubject;
       $("borderColor").value = state.styles.border;
-
       $("timeInputs").innerHTML = "<th class='labelstart'>Time :</th>";
       for (let i = 0; i < state.blocks + 1; i++) {
         let celltd = document.createElement("td");
@@ -659,14 +647,12 @@
         inp.oninput = e => {
           state.times[i] = e.target.value;
         };
-
         inp.onblur = () => {
           save();
         };
         celltd.append(inp);
         $("timeInputs").append(celltd);
       }
-
       $("subjectChips").innerHTML = "";
       state.subjects.forEach(s => {
         const c = document.createElement("div");
@@ -675,7 +661,6 @@
         c.querySelector("button").onclick = () => { state.subjects = state.subjects.filter(x => x !== s); save(); };
         $("subjectChips").append(c);
       });
-
       const days = DAY_FORMATS[state.dayFormat].value;
       $("dayContent").innerHTML = "";
       days.forEach(d => {
@@ -686,17 +671,12 @@
         for (let i = 0; i < state.blocks; i++) {
           let cellsel = document.createElement("td");
           const sel = document.createElement("select");
-
           const isBreak = i === state.breakAt - 1;
-
           sel.innerHTML = isBreak
             ? `<option>R</option>`
             : `<option></option>` + state.subjects.map(s => `<option>${s}</option>`).join("");
-
           sel.disabled = isBreak;
-
           sel.value = state.content[d][i] || "";
-
           sel.onchange = e => {
             state.content[d][i] = e.target.value;
             save();
@@ -706,62 +686,52 @@
         }
         $("dayContent").append(row);
       });
-
       $("prevHeader").textContent = state.header;
       $("prevFooter").textContent = state.footer;
       $("headerText").value = state.header;
       $("footerText").value = state.footer;
-
       const t = $("table"); t.innerHTML = ""; t.style.borderColor = state.styles.border;
-
       const head = document.createElement("tr");
-
       head.innerHTML = `<th><sub>DAY</sub> &#9586; <sup>TIME</sup></th>`;
       let displayIndex = 1;
-
       for (let i = 0; i < state.blocks; i++) {
         const isBreak = i === state.breakAt - 1;
         const label = isBreak ? "R" : displayIndex++;
-
         const start = state.times[i] || "";
         const end = state.times[i + 1] || "";
-
         head.innerHTML += `
-    <th class="timeCell" style="font-size:${state.styles.fsTime}px">
-      <span class="start">${start}</span>
-       ${label}
-      <span class="end">${end}</span>
-    </th>
-  `;
+ <th class="timeCell" style="font-size:${state.styles.fsTime}px">
+ <span class="start">${start}</span>
+ ${label}
+ <span class="end">${end}</span>
+ </th>
+ `;
       }
       t.append(head);
-
       days.forEach((d, di) => {
         const r = document.createElement("tr");
         r.innerHTML = `<th style="font-size:${state.styles.fsTime * 1.5}px" >${d}</th>`;
         for (let i = 0; i < state.blocks; i++) {
           if (i === state.breakAt - 1 && di === 0) {
             r.innerHTML += `
-     <td class="lunch" rowspan="${days.length}">
-       ${state.breakText.split("").join("<br>")}
-     </td>`;
+ <td class="lunch" rowspan="${days.length}">
+ ${state.breakText.split("").join("<br>")}
+ </td>`;
             continue;
           }
           if (i === state.breakAt - 1) continue;
-
           const s = state.content[d][i];
           r.innerHTML += `
-   <td class="dayCell" style="
-     background:${state.styles.subjectBg[s] || '#f2f2f2'};
-     color:${state.styles.subjectColor[s] || '#000'};
-     font-size:${state.styles.fsSubject}px">
-     ${s || ""}
-   </td>`;
+ <td class="dayCell" style="
+ background:${state.styles.subjectBg[s] || '#f2f2f2'};
+ color:${state.styles.subjectColor[s] || '#000'};
+ font-size:${state.styles.fsSubject}px">
+ ${s || ""}
+ </td>`;
         }
         t.append(r);
       });
     }
-
     $("dayFormat").onchange = e => { state.dayFormat = +e.target.value; save(); };
     $("blocks").oninput = e => { state.blocks = +e.target.value; save(); };
     $("breakAt").oninput = e => { state.breakAt = +e.target.value; save(); };
@@ -771,7 +741,6 @@
     $("fsTime").oninput = e => { state.styles.fsTime = +e.target.value; save(); };
     $("fsSubject").oninput = e => { state.styles.fsSubject = +e.target.value; save(); };
     $("borderColor").oninput = e => { state.styles.border = e.target.value; save(); };
-
     $("subjectInput").onkeyup = e => {
       if (e.key === "," || e.key === "Enter") {
         const v = e.target.value.replace(",", "").trim();
@@ -783,65 +752,49 @@
         e.target.value = ""; save();
       }; renderSubjectStyleControls()
     };
-
-
-
     function renderSubjectStyleControls() {
       const wrap = document.getElementById("subjectStyleControls");
       wrap.innerHTML = "<span>Set Background & Font color </span>";
-
       const row = document.createElement("div");
       row.className = "row";
-
       state.subjects.forEach(s => {
         state.styles.subjectBg[s] ||= `hsl(${Math.random() * 360},70%,85%)`;
         state.styles.subjectColor[s] ||= "#000000";
-
         const box = document.createElement("div");
         box.style.display = "flex";
         box.style.alignItems = "center";
         box.style.gap = "6px";
         box.style.background = state.styles.subjectBg[s];
         box.style.color = state.styles.subjectColor[s];
-
         box.innerHTML = `
-    
-      <input type="color" value="${state.styles.subjectBg[s]}" class="bgpicker" style="background-Color:${state.styles.subjectBg[s]}">
-        <label>${s}</label>
-      <input type="color" value="${state.styles.subjectColor[s]}" class="fontpicker" >
-    `;
-
+ 
+ <input type="color" value="${state.styles.subjectBg[s]}" class="bgpicker" style="background-Color:${state.styles.subjectBg[s]}">
+ <label>${s}</label>
+ <input type="color" value="${state.styles.subjectColor[s]}" class="fontpicker" >
+ `;
         const [bg, font] = box.querySelectorAll("input");
         bg.oninput = e => { state.styles.subjectBg[s] = e.target.value; bg.style.backgroundColor = e.target.value; box.style.backgroundColor = e.target.value; save(); };
         font.oninput = e => { state.styles.subjectColor[s] = e.target.value; box.style.color = e.target.value; save(); };
-
         row.append(box);
       });
-
       wrap.append(row);
     }
-
-function downloadDivAsPNG(divId, fileName = "image.png") {
-  const element = document.getElementById(divId);
-
-  html2canvas(element, {
-    scale: 2,          // higher = better quality
-    useCORS: true,     // allow cross-origin images
-    backgroundColor: null // keeps transparency if needed
-  }).then(canvas => {
-    const link = document.createElement("a");
-    link.download = fileName;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-  });
-}
-
-
+    function downloadDivAsPNG(divId, fileName = "image.png") {
+      const element = document.getElementById(divId);
+      html2canvas(element, {
+        scale: 2, // higher = better quality
+        useCORS: true, // allow cross-origin images
+        backgroundColor: null // keeps transparency if needed
+      }).then(canvas => {
+        const link = document.createElement("a");
+        link.download = fileName;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      });
+    }
     render();
     renderSubjectStyleControls();
   </script>
 </body>
 
-
 </html>
-
