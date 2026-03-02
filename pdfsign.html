@@ -22,6 +22,7 @@
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
+      position: relative;
     }
 
     .layout {
@@ -123,7 +124,7 @@
     #sigBox img {
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      object-fit: fill;
       pointer-events: none;
       user-select: none;
     }
@@ -144,7 +145,7 @@
       padding: 8px;
       background: #fbfcff;
     }
-
+    
     .pdf-card {
       border: 1px solid #e5e7eb;
       border-radius: 8px;
@@ -197,6 +198,19 @@
       font-size: 10px;
       color: var(--muted);
     }
+    .page-footer {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: var(--muted);
+      background: rgba(255,255,255,0.9);
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      z-index: 9999;
+    }
   </style>
 </head>
 <body>
@@ -208,6 +222,7 @@
         <input id="signatureInput" type="file" accept="image/png,image/jpeg,image/webp" />
         <label for="signatureSelect">Saved signatures</label>
         <select id="signatureSelect"></select>
+        <button id="clearSignatures" title="Clear all saved signatures" style="margin-left:8px;background:transparent;border:1px solid var(--line);border-radius:6px;padding:4px 8px;color:var(--danger);cursor:pointer">Clear</button>
         <span class="muted">Drag and resize the red box on preview.</span>
       </div>
       <div class="preview-wrap">
@@ -220,17 +235,25 @@
 
     <aside class="panel right">
       <h3 style="margin:0">PDF Queue</h3>
-      <input id="pdfInput" type="file" accept="application/pdf" multiple />
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="pdfInput" type="file" accept="application/pdf" multiple />
+        <button id="resetQueue" title="Clear all PDF queue">Reset</button> <div id="loadinglabel" display="none">Loading..</div>
+      </div>
       <div id="pdfList" class="pdf-list"></div>
-      <button id="signNow" disabled>Sign now</button>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="signNow" disabled>Sign now</button>
+      </div>
     </aside>
   </div>
+
+
 
   <script type="module">
     import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.mjs';
     import { PDFDocument } from 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm';
     import JSZip from 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm';
 
+    // use CDN ES module worker (works with imported pdf.min.mjs)
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.min.mjs';
 
     const signatureInput = document.getElementById('signatureInput');
@@ -239,14 +262,21 @@
     const sigBox = document.getElementById('sigBox');
     const pdfInput = document.getElementById('pdfInput');
     const pdfList = document.getElementById('pdfList');
+    const resetQueue = document.getElementById('resetQueue');
     const signNow = document.getElementById('signNow');
     const pdfCanvas = document.getElementById('pdfCanvas');
     const stage = document.getElementById('stage');
+    const loadingdiv = document.getElementById('loadinglabel');
 
     let signatures = [];
     let docs = [];
     let selectedDocId = null;
     let selectedPage = 1;
+
+    function showloading () { loadingdiv.style.display = 'block'
+    }
+    function hideloading() {loadingdiv.style.display = 'none'}
+
 
     function readAsDataURL(file) {
       return new Promise((resolve, reject) => {
@@ -325,11 +355,30 @@
 
     signatureSelect.addEventListener('change', applySelectedSignature);
 
+    // Clear saved signatures button
+    const clearSignatures = document.getElementById('clearSignatures');
+    clearSignatures.addEventListener('click', () => {
+      if (!signatures.length) return;
+      if (!confirm('Remove all saved signatures?')) return;
+      signatures = [];
+      saveSignatures();
+      renderSignatureOptions();
+      sigImg.src = '';
+      sigBox.style.display = 'none';
+      updateSignNowState();
+    });
+
     pdfInput.addEventListener('change', async () => {
+      showloading ();
       const files = Array.from(pdfInput.files || []);
       for (const file of files) {
         const bytes = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+        // pdf.js may transfer the ArrayBuffer to its worker, detaching it here.
+        // Create two independent copies: one for pdf.js (which may be transferred),
+        // and one to store in `docs` for later reuse.
+        const bytesForPdf = bytes.slice(0);
+        const bytesStore = bytes.slice(0);
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(bytesForPdf), disableStream: true, disableRange: true }).promise;
         const pageThumbs = [];
 
         for (let i = 1; i <= pdf.numPages; i++) {
@@ -345,7 +394,8 @@
         docs.push({
           id: crypto.randomUUID(),
           name: file.name,
-          bytes,
+          bytes: bytesStore,
+          fileRef: file,
           pageCount: pdf.numPages,
           checked: true,
           thumbs: pageThumbs
@@ -358,7 +408,21 @@
       await renderMainPreview();
       updateSignNowState();
       pdfInput.value = '';
+      hideloading()
     });
+
+      // Reset queue handler
+      resetQueue.addEventListener('click', () => {
+        if (!docs.length) return;
+        if (!confirm('Clear all PDFs from queue?')) return;
+        docs = [];
+        selectedDocId = null;
+        selectedPage = 1;
+        renderPdfList();
+        renderMainPreview();
+        updateSignNowState();
+        pdfInput.value = '';
+      });
 
     function renderPdfList() {
       pdfList.innerHTML = '';
@@ -389,7 +453,26 @@
         });
         chkWrap.append(chk, document.createTextNode(' Include'));
 
-        head.append(left, chkWrap);
+        const controls = document.createElement('div');
+        controls.style.display = 'flex';
+        controls.style.flexDirection = 'column';
+        controls.style.alignItems = 'flex-end';
+
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = '🗑';
+        removeBtn.style.color = 'orange';
+        removeBtn.style.background = 'transparent';
+        removeBtn.style.border = '1px solid var(--line)';
+        removeBtn.style.borderRadius = '3px';
+        removeBtn.style.padding = '1px 2px';
+        removeBtn.style.cursor = 'pointer';
+        removeBtn.addEventListener('click', () => {
+          removeDocById(doc.id);
+        });
+
+        controls.append(removeBtn, chkWrap);
+
+        head.append(left, controls);
 
         const pages = document.createElement('div');
         pages.className = 'pages';
@@ -427,6 +510,19 @@
       });
     }
 
+      function removeDocById(id) {
+        const idx = docs.findIndex((d) => d.id === id);
+        if (idx === -1) return;
+        docs.splice(idx, 1);
+        if (selectedDocId === id) {
+          selectedDocId = docs.length ? docs[0].id : null;
+          selectedPage = 1;
+        }
+        renderPdfList();
+        renderMainPreview();
+        updateSignNowState();
+      }
+
     async function renderMainPreview() {
       const doc = docs.find((d) => d.id === selectedDocId);
       const ctx = pdfCanvas.getContext('2d');
@@ -443,7 +539,9 @@
         return;
       }
 
-      const pdf = await pdfjsLib.getDocument({ data: doc.bytes }).promise;
+      // Ensure we pass a fresh Uint8Array and disable streaming/range requests
+      const dataForPdfjs = doc.bytes instanceof Uint8Array ? doc.bytes : new Uint8Array(doc.bytes);
+      const pdf = await pdfjsLib.getDocument({ data: dataForPdfjs, disableStream: true, disableRange: true }).promise;
       const page = await pdf.getPage(selectedPage);
       const raw = page.getViewport({ scale: 1 });
       const maxW = Math.min(stage.parentElement.clientWidth - 24, 900);
@@ -485,7 +583,14 @@
         const zip = new JSZip();
 
         for (const doc of docs.filter((d) => d.checked)) {
-          const pdfDoc = await PDFDocument.load(doc.bytes);
+          // Re-read the file bytes at signing time to ensure we have a
+          // non-detached ArrayBuffer (pdf.js may transfer/modify buffers).
+          let sourceBytes = doc.bytes;
+          if (doc.fileRef) {
+            sourceBytes = await doc.fileRef.arrayBuffer();
+          }
+          const bytesForPdfLib = sourceBytes instanceof ArrayBuffer ? sourceBytes.slice(0) : sourceBytes;
+          const pdfDoc = await PDFDocument.load(bytesForPdfLib);
           const isPng = sig.type?.includes('png') || sig.dataUrl.startsWith('data:image/png');
           const img = isPng ? await pdfDoc.embedPng(sigBytes) : await pdfDoc.embedJpg(sigBytes);
 
@@ -556,6 +661,17 @@
     loadSignatures();
     renderMainPreview();
     updateSignNowState();
+    hideloading()
+  </script>
+  <div id="pageFooter" class="page-footer" aria-hidden="true"></div>
+  <script>
+    (function(){
+      var el = document.getElementById('pageFooter');
+      if (!el) return;
+      var year = (new Date()).getFullYear();
+      var version = '1.0.0';
+      el.textContent = '©TGQASS azraful@topglove.com.my ' + year + ' — v' + version;
+    })();
   </script>
 </body>
 </html>
