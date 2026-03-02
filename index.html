@@ -1,536 +1,810 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RR7HN3SSPJ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-RR7HN3SSPJ');
+</script>
+  
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simple PDF Signer</title>
+  <title>Jadual Sekolah: Builder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
-      color-scheme: light;
-      --bg: #f3f4f6;
-      --panel: #ffffff;
-      --line: #d1d5db;
-      --text: #111827;
-      --muted: #6b7280;
-      --brand: #2563eb;
+      /* Base colors */
+      --color-bg: #ffffff;
+      --color-text: #1f2933;
+      --color-muted: #6b7280;
+      /* Theme  */
+      --color-theme: 59 130 246;
+      /* blue-500 as RGB */
+      --color-theme-soft: rgba(var(--color-theme), 0.12);
+      --color-theme-medium: rgba(var(--color-theme), 0.25);
+      /* Borders & radius */
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --border-color: #e5e7eb;
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-focus: 0 0 0 3px var(--color-theme-soft);
+      /* Spacing */
+      --space-xs: 0.25rem;
+      --space-sm: 0.5rem;
+      --space-md: 0.75rem;
+      --space-lg: 1rem;
+      /* Motion */
+      --ease: cubic-bezier(0.4, 0, 0.2, 1);
+      --duration-fast: 120ms;
+      --duration-normal: 200ms;
     }
-
-    * { box-sizing: border-box; }
 
     body {
+      font-family: system-ui, sans-serif;
+      background: #f3f4f6;
       margin: 0;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    .app {
-      display: grid;
-      grid-template-columns: 1fr 330px;
-      gap: 16px;
-      min-height: 100vh;
       padding: 16px;
     }
 
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
-    .left-panel {
-      display: grid;
-      grid-template-rows: auto 1fr;
-      gap: 12px;
-      min-width: 0;
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, .1);
+      gap: 16px;
     }
 
-    h1, h2, h3 { margin: 0; }
+    h2 {
+      margin-top: 0;
+    }
 
-    .toolbar {
+    .row {
       display: flex;
       flex-wrap: wrap;
+      gap: 8px;
       align-items: center;
-      gap: 8px 12px;
-      font-size: 14px;
+      padding-top: 8px;
     }
 
-    .toolbar label { color: var(--muted); font-weight: 600; }
+    #subjectStyleControls div label {
+      font-size: 14px;
+      font-weight: bold;
+      line-height: 1.5;
+    }
 
-    input[type="file"], select, button {
+    #dayContent strong {
+      width: 100px
+    }
+
+    #dayContent select {
+      min-width: 60px
+    }
+
+    input,
+    select,
+    textarea,
+    button {
       font: inherit;
-      padding: 6px 10px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: white;
+    }
+
+    select:disabled {
+      background: #dedcdc;
+      width: 60px;
+      height: 30px;
+      border-radius: 15px;
+    }
+
+    input,
+    select,
+    textarea {
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: #fff;
+      transition: border-color var(--duration-fast) var(--ease),
+        box-shadow var(--duration-fast) var(--ease);
+    }
+
+    input[type="number"] {
+      text-align: right;
+      width: 47px
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: rgb(var(--color-theme));
+      box-shadow: var(--shadow-focus);
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: var(--color-muted);
+    }
+
+    input,
+    select {
+      max-width: fit-content;
+    }
+
+    textarea {
+      resize: vertical;
+      width: 90%
+    }
+
+    .chip {
+      background: #e5e7eb;
+      border-radius: 12px;
+      padding: 4px 8px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .chip button {
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding-top: 8px;
+    }
+
+    table {
+      width: 1000px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 10px 6px;
+      text-align: center;
+      position: relative;
+    }
+
+    th {
+      background: #f7f7f7
+    }
+
+    .timeCell {
+      font-weight: bold;
+    }
+
+    .timeCell .start,
+    .timeCell .end {
+      position: absolute;
+      font-size: 11px;
+      font-family: monospace;
+      color: #0049a3;
+    }
+
+    .timeCell .start {
+      left: 3px;
+      top: 1px;
+    }
+
+    .timeCell .end {
+      bottom: 1px;
+      right: 3px
+    }
+
+    .dayCell {
+      font-weight: bold;
+    }
+
+    .lunch {
+      text-orientation: upright;
+      font-weight: bold;
+      vertical-align: middle;
+    }
+
+    input[type="color"] {
+      cursor: pointer;
+      /* Change cursor to pointer on hover */
+    }
+
+    .fontpicker {
+      border: none;
+      padding: 4px;
+      height: 13px;
+      border-radius: 50%;
+      /* Add rounded corners */
+      background-color: #727070;
+      margin-right: 10px
+    }
+
+    .bgpicker {
+      padding: 4px;
+      border: 0px solid #727070;
+      ;
+      /* Add rounded corners */
+      background-color: #f0f0f0;
+    }
+
+    #timeInputs input {
+      width: 60px
+    }
+
+    #preview {
+      height: fit-content;
+      max-width: max-content;
+      overflow-x: scroll;
+    }
+
+    .labelstart {
+      width: 100px
+    }
+
+    @media print {
+      .whide {
+        display: none;
+      }
+
+      body {
+        height: fit-content;
+        margin: 0px;
+        padding: 0px;
+        background: #fff;
+      }
+
+      .card {
+        box-shadow: none;
+      }
+
+      table {
+        box-shadow: 2px 2px 3px #ccc;
+      }
+
+      #preview {
+        height: 400px;
+        width: 1000px;
+        max-width: max-content;
+        overflow: hidden;
+      }
+
+      .container {
+        Width: 1005px;
+        margin: 0px;
+        background: none;
+      }
+
+      /* ---- B&W MODE ONLY ---- */
+      table,
+      td,
+      th,
+      .dayCell {
+        border: 2px solid #b5b5b5;
+      }
+
+      body.bw-print .dayCell,
+      body.bw-print .timeCell {
+        background: transparent !important;
+        color: #000 !important;
+      }
     }
 
     button {
+      padding: var(--space-sm) var(--space-lg);
+      border-radius: var(--radius-md);
+      border: 1px solid transparent;
+      background: rgb(var(--color-theme));
+      color: #fff;
+      margin: 5px;
       cursor: pointer;
-      background: var(--brand);
-      color: white;
-      border-color: var(--brand);
+      box-shadow: var(--shadow-sm);
     }
 
-    button:disabled {
-      cursor: not-allowed;
-      opacity: 0.55;
+    .chip button {
+      padding: 1px 1px
     }
 
-    .canvas-wrap {
-      overflow: auto;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fafafa;
+    button:hover {
+      background: #0049a3
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    #timeInputs td,
+    .rowt td {
+      padding: 0px
+    }
+
+    #timeInputs td input,
+    .rowt td select {
+      border: none;
+    }
+
+    .note {
+      color: #1f2933;
+      font-size: 8px;
+    }
+
+    .wrap {
       display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      padding: 12px;
-      position: relative;
+      flex-direction: column;
+
+      label {
+        font-size: 12px;
+      }
     }
 
-    .preview-stage {
-      position: relative;
-      max-width: 100%;
-      width: fit-content;
-      line-height: 0;
+    #subjectStyleControls .row div {
+      box-shadow: 2px 2px 3px #ccc;
     }
-
-    #pdfPreview {
-      border: 1px solid #e5e7eb;
-      background: white;
-      max-width: 100%;
-      height: auto;
-    }
-
-    #signatureBox {
-      position: absolute;
-      border: 2px dashed #ef4444;
-      min-width: 40px;
-      min-height: 20px;
-      resize: both;
-      overflow: hidden;
-      cursor: move;
-      display: none;
-      touch-action: none;
-      background: rgba(255,255,255,0.1);
-    }
-
-    #signatureBox img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      pointer-events: none;
-      user-select: none;
-    }
-
-    .right-panel {
-      display: grid;
-      grid-template-rows: auto auto 1fr auto;
-      gap: 10px;
-      min-height: 0;
-    }
-
-    .pdf-list {
-      overflow: auto;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 8px;
-      background: #fbfbfc;
-      min-height: 260px;
-      max-height: calc(100vh - 260px);
-    }
-
-    .pdf-item {
-      display: grid;
-      grid-template-columns: 58px 1fr;
-      gap: 8px;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 8px;
-      background: white;
-      margin-bottom: 8px;
-      align-items: start;
-    }
-
-    .pdf-item canvas {
-      width: 58px;
-      border: 1px solid #e5e7eb;
-      border-radius: 4px;
-    }
-
-    .pdf-item p {
-      margin: 0 0 4px;
-      font-size: 12px;
-      word-break: break-word;
-    }
-
-    .muted { color: var(--muted); font-size: 12px; }
   </style>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
+
 <body>
-  <div class="app">
-    <section class="panel left-panel">
-      <div class="toolbar">
-        <h2>PDF Sign Preview</h2>
-        <label for="signatureInput">Upload signature</label>
-        <input id="signatureInput" type="file" accept="image/png,image/jpeg,image/webp" />
-        <label for="signatureSelect">Choose signature</label>
-        <select id="signatureSelect"></select>
-        <span class="muted">Drag + resize the red box on first-page preview.</span>
-      </div>
-
-      <div class="canvas-wrap">
-        <div class="preview-stage" id="previewStage">
-          <canvas id="pdfPreview"></canvas>
-          <div id="signatureBox">
-            <img id="signatureImg" alt="signature" />
-          </div>
+  <div class="container">
+    <!-- A -->
+    <div class="card whide">
+      <h2>Jadual Sekolah Builder</h2>
+      <hr>
+      <div class="note">©github.com/azrfl | Version 1.0.1 | 2026</div>
+      <hr>
+      <div class="row">
+        <div class="wrap">
+          <label>Day format</label>
+          <select id="dayFormat"></select>
         </div>
-      </div>
-    </section>
+        <div class="wrap"> <label>Total blocks (incl. R):</label>
+          <input type="number" id="blocks" min="6" max="20" />
+        </div>
 
-    <aside class="panel right-panel">
-      <h3>PDF Queue</h3>
-      <div>
-        <input id="pdfInput" type="file" accept="application/pdf" multiple />
+        <div class="wrap"> <label>Recess Text:</label>
+          <input type="text" id="breakText" placeholder="Lunch" style="width:110px" />
+        </div>
+
+        <div class="wrap">
+          <label>2nd Half Start:</label>
+          <input type="number" id="breakAt" min="1" />
+        </div>
+
+        <div class="wrap">
+        <label>Header / Class Name</label>
+        <input id="headerText" />
+        </div>
+
       </div>
-      <div class="pdf-list" id="pdfList"></div>
-      <button id="signNowBtn" disabled>Sign now</button>
-    </aside>
+      <div class="row">
+        <div class="wrap">
+        <label>Subjects</label> 
+        <input id="subjectInput" placeholder="Enter Subject" /></div>
+        
+        <button onclick="showemoji()">😀</button>
+         </div>
+
+        <emoji-picker emoji-version="15.0" class="light" id="emojidiv" style="display:none"></emoji-picker>
+
+        <div class="chips" id="subjectChips"></div>
+     
+      
+      <br>
+      <table>
+        <thead>
+          <tr id="timeInputs"></tr>
+        </thead>
+        <tbody id="dayContent"></tbody>
+      </table>
+      <br>
+      <label>Footer / Remark</label> <br>
+      <textarea id="footerText"></textarea>
+    </div>
+    <!-- B -->
+    <div class="card whide">
+      <h2>Styling</h2>
+      <div id="subjectStyles"></div>
+      <div class="row">
+        <label>Day/Time font size</label>
+        <input type="range" id="fsTime" min="8" max="18" />
+        <label>Subject font size</label>
+        <input type="range" id="fsSubject" min="8" max="24" />
+      </div>
+      <div id="subjectStyleControls"></div>
+      <div style="display:none">
+        <label>Border color</label>
+        <input type="color" id="borderColor" />
+      </div>
+    </div>
+    <!-- C -->
+    <div class="card" id="preview">
+      <h2 id="prevHeader"></h2>
+      <table id="table"></table>
+      <p id="prevFooter"></p>
+    </div>
+    <div class="card whide">
+      <h2>Output</h2>
+      <button onclick="printColor()">Print PDF (Color)</button>
+      <button onclick="printBW()">Print PDF(B & W)</button>
+      <button onclick="downloadDivAsPNG('preview', 'Jadual.png')">
+        Download PNG Image
+      </button>
+    </div>
   </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.mjs" type="module"></script>
-  <script type="module">
-    import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.mjs';
-    import { PDFDocument } from 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm';
-    import JSZip from 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm';
-
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.min.mjs';
-
-    const signatureInput = document.getElementById('signatureInput');
-    const signatureSelect = document.getElementById('signatureSelect');
-    const signatureImg = document.getElementById('signatureImg');
-    const signatureBox = document.getElementById('signatureBox');
-    const pdfInput = document.getElementById('pdfInput');
-    const pdfList = document.getElementById('pdfList');
-    const signNowBtn = document.getElementById('signNowBtn');
-    const pdfPreview = document.getElementById('pdfPreview');
-    const previewStage = document.getElementById('previewStage');
-
-    let signatures = [];
-    let pdfEntries = [];
-    let selectedPdfId = null;
-
-    function readFileAsDataURL(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    }
-
-    function loadSignatures() {
-      signatures = JSON.parse(localStorage.getItem('pdf_signer_signatures') || '[]');
-      if (!Array.isArray(signatures)) signatures = [];
-      renderSignatureSelect();
-    }
-
-    function saveSignatures() {
-      localStorage.setItem('pdf_signer_signatures', JSON.stringify(signatures));
-    }
-
-    function renderSignatureSelect() {
-      signatureSelect.innerHTML = '';
-      if (!signatures.length) {
-        const empty = document.createElement('option');
-        empty.textContent = 'No signature saved';
-        empty.value = '';
-        signatureSelect.appendChild(empty);
-        signatureBox.style.display = 'none';
-        return;
-      }
-
-      signatures.forEach((sig, i) => {
-        const option = document.createElement('option');
-        option.value = i;
-        option.textContent = `Signature ${i + 1}`;
-        signatureSelect.appendChild(option);
-      });
-
-      signatureSelect.value = '0';
-      applySelectedSignature();
-    }
-
-    function applySelectedSignature() {
-      const idx = Number(signatureSelect.value);
-      const sig = signatures[idx];
-      if (!sig) {
-        signatureBox.style.display = 'none';
-        return;
-      }
-
-      signatureImg.src = sig.dataUrl;
-      signatureBox.style.display = selectedPdfId ? 'block' : 'none';
-      if (!signatureBox.style.width) {
-        signatureBox.style.width = '160px';
-        signatureBox.style.height = '80px';
-        signatureBox.style.left = '24px';
-        signatureBox.style.top = '24px';
-      }
-    }
-
-    signatureInput.addEventListener('change', async () => {
-      const file = signatureInput.files?.[0];
-      if (!file) return;
-      const dataUrl = await readFileAsDataURL(file);
-      signatures.push({
-        id: crypto.randomUUID(),
-        name: file.name,
-        type: file.type,
-        dataUrl
-      });
-      saveSignatures();
-      renderSignatureSelect();
-      signatureSelect.value = String(signatures.length - 1);
-      applySelectedSignature();
-      signatureInput.value = '';
+  <script>
+    const picker = document.querySelector('emoji-picker');
+    const input = document.getElementById('subjectInput');
+    const emojis = document.getElementById('emojidiv');
+    picker.addEventListener('emoji-click', (event) => {
+      const emoji = event.detail.unicode;
+      const start = input.selectionStart ?? input.value.length;
+      const end = input.selectionEnd ?? input.value.length;
+      input.value =
+        input.value.slice(0, start) +
+        emoji +
+        input.value.slice(end);
+      const cursor = start + emoji.length;
+      input.focus();
+      input.setSelectionRange(cursor, cursor);
+      emojis.style.display = "none"
     });
-
-    signatureSelect.addEventListener('change', applySelectedSignature);
-
-    pdfInput.addEventListener('change', async () => {
-      const files = Array.from(pdfInput.files || []);
-      for (const file of files) {
-        const id = crypto.randomUUID();
-        const bytes = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-        const page1 = await pdf.getPage(1);
-        const viewport = page1.getViewport({ scale: 0.18 });
-        const thumbCanvas = document.createElement('canvas');
-        thumbCanvas.width = viewport.width;
-        thumbCanvas.height = viewport.height;
-        await page1.render({ canvasContext: thumbCanvas.getContext('2d'), viewport }).promise;
-
-        pdfEntries.push({
-          id,
-          name: file.name,
-          bytes,
-          pageCount: pdf.numPages,
-          thumbDataUrl: thumbCanvas.toDataURL('image/png'),
-          checked: true
-        });
+    function showemoji() {
+      if (emojis.style.display == "block") {
+        emojis.style.display = "none"
       }
-
-      pdfInput.value = '';
-      renderPdfList();
-      if (!selectedPdfId && pdfEntries.length) {
-        selectedPdfId = pdfEntries[0].id;
+      else { emojis.style.display = "block" }
+    }
+    function printColor() {
+      document.body.classList.remove("bw-print");
+      window.print();
+    }
+    function printBW() {
+      document.body.classList.add("bw-print");
+      window.print();
+      setTimeout(() => document.body.classList.remove("bw-print"), 100);
+    }
+    const DAY_FORMATS = [
+      { name: "ISNIN-JUMAAT", value: ["ISNIN", "SELASA", "RABU", "KHAMIS", "JUMAAT"] },
+      { name: "Isnin-Jumaat", value: ["Isnin", "Selasa", "Rabu", "Khamis", "Jumaat"] },
+      { name: "ISN-JUM", value: ["ISN", "SEL", "RAB", "KHA", "JUM"] },
+      { name: "I-J", value: ["I", "S", "R", "K", "J"] },
+      { name: "Monday-Friday", value: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] },
+      { name: "M-F", value: ["M", "T", "W", "T", "F"] },
+      { name: "Sunday-Thursday", value: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"] }
+    ];
+    const samplestate =
+    {
+      "dayFormat": 0,
+      "blocks": 12,
+      "breakAt": 5,
+      "breakText": "REHAT",
+      "times": ["7:25", "7:55", "8:25", "8:55", "9:25", "9:45", "10:15", "10:45", "11:15", "11:45", "12:15", "12:45", "1:15"
+      ],
+      "subjects": ["جاوي", "BI💬", "AQH", "🎨PSV", "PJ⚽️", "MZ🎼", "👥👥", "SN🔬", "MT🧮", "BA💬", "TSM🔈️", "🩺PK", "KK👮", "SEJ", "ULUM", "RBT", "BM💬"
+      ],
+      "content": {
+        "ISNIN": [
+          "👥👥",
+          "جاوي",
+          "BI💬",
+          "BI💬",
+          "TJ",
+          "BM💬",
+          "BM💬",
+          "AQH",
+          "AQH",
+          "AQH",
+          "🎨PSV",
+          "🎨PSV"
+        ],
+        "SELASA": [
+          "MZ🎼",
+          "PJ⚽️",
+          "BM💬",
+          "BM💬",
+          "PER.",
+          "SN🔬",
+          "SN🔬",
+          "MT🧮",
+          "MT🧮",
+          "BI💬",
+          "BI💬"
+        ],
+        "RABU": [
+          "BA💬",
+          "BA💬",
+          "BM💬",
+          "BM💬",
+          "",
+          "TSM🔈️",
+          "TSM🔈️",
+          "🩺PK",
+          "🩺PK",
+          "KK👮",
+          "KK👮",
+          "KK👮"
+        ],
+        "KHAMIS": [
+          "PJ⚽️",
+          "SEJ",
+          "SEJ",
+          "BA💬",
+          "",
+          "SN🔬",
+          "SN🔬",
+          "BI💬",
+          "BI💬",
+          "MT🧮",
+          "MT🧮"
+        ],
+        "JUMAAT": [
+          "BI💬",
+          "BI💬",
+          "ULUM",
+          "ULUM",
+          "",
+          "RBT",
+          "RBT",
+          "BM💬",
+          "BM💬",
+          "MT🧮"
+        ]
+      },
+      "header": "4 GIGIH (sample)",
+      "footer": "2026",
+      "styles": {
+        "subjectBg": {
+          "🎨PSV": "hsl(1.5498411278855384,70%,85%)",
+          "جاوي": "#e39292",
+          "🇧🇮": "hsl(115.18329006305868,70%,85%)",
+          "💬BI": "hsl(145.2249674058503,70%,85%)",
+          "BI💬": "#c3e4f9",
+          "BM💬": "#9dfbdf",
+          "🥰AQH": "hsl(290.53322734053523,70%,85%)",
+          "AQH": "#13fc03",
+          "PJ⚽️": "#f2f2f2",
+          "MZ🎼": "hsl(314.7039909341056,70%,85%)",
+          "👥👥": "hsl(118.17244343699184,70%,85%)",
+          "SN🔬": "#3566f8",
+          "MT🧮": "#d1ffe5",
+          "عرب": "hsl(261.77666086609526,70%,85%)",
+          "BA💬": "#ff00d0",
+          "TAS🗣️": "hsl(34.65058713461855,70%,85%)",
+          "TSM🔈️": "hsl(215.64214037561592,70%,85%)",
+          "👨‍⚕️PK": "hsl(286.270549851156,70%,85%)",
+          "🩺PK": "hsl(316.8180099058607,70%,85%)",
+          "KK👮": "hsl(236.30525397790922,70%,85%)",
+          "SEJ": "hsl(100.59704551661656,70%,85%)",
+          "ULUM": "hsl(20.743083569617305,70%,85%)",
+          "RBT": "hsl(203.8869316759505,70%,85%)"
+        },
+        "subjectColor": {
+          "🎨PSV": "#000",
+          "جاوي": "#3a2727",
+          "🇧🇮": "#000",
+          "💬BI": "#000",
+          "BI💬": "#000",
+          "BM💬": "#000",
+          "🥰AQH": "#000",
+          "AQH": "#000",
+          "PJ⚽️": "#000",
+          "MZ🎼": "#000",
+          "👥👥": "#000",
+          "SN🔬": "#ffffff",
+          "MT🧮": "#000",
+          "عرب": "#000",
+          "BA💬": "#000",
+          "TAS🗣️": "#000",
+          "TSM🔈️": "#000",
+          "👨‍⚕️PK": "#000",
+          "🩺PK": "#000",
+          "KK👮": "#000",
+          "SEJ": "#000",
+          "ULUM": "#000",
+          "RBT": "#000"
+        },
+        "border": "#5c5c5c",
+        "dayBg": {},
+        "fs": {
+          "header": 12,
+          "time": 12,
+          "subject": 12,
+          "footer": 12
+        },
+        "fsTime": 14,
+        "fsSubject": 17
       }
-      await renderMainPreview();
-      updateSignButton();
-    });
-
-    function renderPdfList() {
-      pdfList.innerHTML = '';
-      pdfEntries.forEach((entry) => {
-        const item = document.createElement('div');
-        item.className = 'pdf-item';
-
-        const thumb = document.createElement('canvas');
-        const img = new Image();
-        img.onload = () => {
-          thumb.width = 58;
-          thumb.height = 76;
-          const ctx = thumb.getContext('2d');
-          ctx.clearRect(0, 0, thumb.width, thumb.height);
-          ctx.drawImage(img, 0, 0, thumb.width, thumb.height);
+    }
+    const state = JSON.parse(localStorage.getItem("tt")) || samplestate
+    //{
+    //dayFormat: 0, blocks: 6, breakAt: 3, breakText: "LUNCH",
+    //times: Array(10).fill(""),
+    //subjects: [],
+    //content: {},
+    //header: "", footer: "",
+    //styles: { subjectBg: {}, subjectColor: {}, border: "#ccc", fsTime: 12, fsSubject: 12 }
+    //};
+    const $ = id => document.getElementById(id);
+    const save = () => { localStorage.setItem("tt", JSON.stringify(state)); render(); };
+    function render() {
+      $("dayFormat").innerHTML = DAY_FORMATS.map((d, i) => `<option value="${i}">${d.name}</option>`).join("");
+      $("dayFormat").value = state.dayFormat;
+      $("blocks").value = state.blocks;
+      $("breakAt").value = state.breakAt;
+      $("breakText").value = state.breakText;
+      $("fsTime").value = state.styles.fsTime;
+      $("fsSubject").value = state.styles.fsSubject;
+      $("borderColor").value = state.styles.border;
+      $("timeInputs").innerHTML = "<th class='labelstart'>Time :</th>";
+      for (let i = 0; i < state.blocks + 1; i++) {
+        let celltd = document.createElement("td");
+        const inp = document.createElement("input");
+        inp.placeholder = `h:m ${i + 1} `;
+        inp.value = state.times[i] || "";
+        inp.oninput = e => {
+          state.times[i] = e.target.value;
         };
-        img.src = entry.thumbDataUrl;
-
-        const info = document.createElement('div');
-        const name = document.createElement('p');
-        name.textContent = entry.name;
-        const pages = document.createElement('p');
-        pages.className = 'muted';
-        pages.textContent = `${entry.pageCount} page(s)`;
-
-        const row = document.createElement('label');
-        row.className = 'muted';
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.checked = entry.checked;
-        checkbox.addEventListener('change', () => {
-          entry.checked = checkbox.checked;
-          updateSignButton();
-        });
-        row.append(checkbox, document.createTextNode(' Include'));
-
-        const previewBtn = document.createElement('button');
-        previewBtn.textContent = 'Preview';
-        previewBtn.style.padding = '4px 8px';
-        previewBtn.addEventListener('click', async () => {
-          selectedPdfId = entry.id;
-          await renderMainPreview();
-        });
-
-        info.append(name, pages, row, previewBtn);
-        item.append(thumb, info);
-        pdfList.appendChild(item);
+        inp.onblur = () => {
+          save();
+        };
+        celltd.append(inp);
+        $("timeInputs").append(celltd);
+      }
+      $("subjectChips").innerHTML = "";
+      state.subjects.forEach(s => {
+        const c = document.createElement("div");
+        c.className = "chip";
+        c.innerHTML = `${s}<button><sup>✖️</sup></button>`;
+        c.querySelector("button").onclick = () => { state.subjects = state.subjects.filter(x => x !== s); save(); };
+        $("subjectChips").append(c);
+      });
+      const days = DAY_FORMATS[state.dayFormat].value;
+      $("dayContent").innerHTML = "";
+      days.forEach(d => {
+        state.content[d] = state.content[d] || Array(10).fill("");
+        const row = document.createElement("tr");
+        row.className = "rowt";
+        row.innerHTML = `<th class="labelstart">${d}</th>`;
+        for (let i = 0; i < state.blocks; i++) {
+          let cellsel = document.createElement("td");
+          const sel = document.createElement("select");
+          const isBreak = i === state.breakAt - 1;
+          sel.innerHTML = isBreak
+            ? `<option>R</option>`
+            : `<option></option>` + state.subjects.map(s => `<option>${s}</option>`).join("");
+          sel.disabled = isBreak;
+          sel.value = state.content[d][i] || "";
+          sel.onchange = e => {
+            state.content[d][i] = e.target.value;
+            save();
+          };
+          cellsel.append(sel)
+          row.append(cellsel);
+        }
+        $("dayContent").append(row);
+      });
+      $("prevHeader").textContent = state.header;
+      $("prevFooter").textContent = state.footer;
+      $("headerText").value = state.header;
+      $("footerText").value = state.footer;
+      const t = $("table"); t.innerHTML = ""; t.style.borderColor = state.styles.border;
+      const head = document.createElement("tr");
+      head.innerHTML = `<th><sub>DAY</sub> &#9586; <sup>TIME</sup></th>`;
+      let displayIndex = 1;
+      for (let i = 0; i < state.blocks; i++) {
+        const isBreak = i === state.breakAt - 1;
+        const label = isBreak ? "R" : displayIndex++;
+        const start = state.times[i] || "";
+        const end = state.times[i + 1] || "";
+        head.innerHTML += `
+ <th class="timeCell" style="font-size:${state.styles.fsTime}px">
+ <span class="start">${start}</span>
+ ${label}
+ <span class="end">${end}</span>
+ </th>
+ `;
+      }
+      t.append(head);
+      days.forEach((d, di) => {
+        const r = document.createElement("tr");
+        r.innerHTML = `<th style="font-size:${state.styles.fsTime * 1.5}px" >${d}</th>`;
+        for (let i = 0; i < state.blocks; i++) {
+          if (i === state.breakAt - 1 && di === 0) {
+            r.innerHTML += `
+ <td class="lunch" rowspan="${days.length}">
+ ${state.breakText.split("").join("<br>")}
+ </td>`;
+            continue;
+          }
+          if (i === state.breakAt - 1) continue;
+          const s = state.content[d][i];
+          r.innerHTML += `
+ <td class="dayCell" style="
+ background:${state.styles.subjectBg[s] || '#f2f2f2'};
+ color:${state.styles.subjectColor[s] || '#000'};
+ font-size:${state.styles.fsSubject}px">
+ ${s || ""}
+ </td>`;
+        }
+        t.append(r);
       });
     }
-
-    async function renderMainPreview() {
-      const selected = pdfEntries.find((e) => e.id === selectedPdfId);
-      if (!selected) {
-        const ctx = pdfPreview.getContext('2d');
-        pdfPreview.width = 640;
-        pdfPreview.height = 420;
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, pdfPreview.width, pdfPreview.height);
-        ctx.fillStyle = '#6b7280';
-        ctx.font = '18px sans-serif';
-        ctx.fillText('Upload PDFs to start preview', 20, 42);
-        signatureBox.style.display = 'none';
-        return;
-      }
-
-      const pdf = await pdfjsLib.getDocument({ data: selected.bytes }).promise;
-      const page1 = await pdf.getPage(1);
-      const unscaled = page1.getViewport({ scale: 1 });
-      const maxWidth = Math.min(previewStage.parentElement.clientWidth - 24, 880);
-      const scale = Math.max(0.25, maxWidth / unscaled.width);
-      const viewport = page1.getViewport({ scale });
-      pdfPreview.width = viewport.width;
-      pdfPreview.height = viewport.height;
-      await page1.render({ canvasContext: pdfPreview.getContext('2d'), viewport }).promise;
-
-      if (signatures.length) {
-        signatureBox.style.display = 'block';
-      }
-    }
-
-    function updateSignButton() {
-      const hasChecked = pdfEntries.some((e) => e.checked);
-      signNowBtn.disabled = !hasChecked || !signatures.length;
-    }
-
-    function getPlacementRatios() {
-      const boxRect = signatureBox.getBoundingClientRect();
-      const canvasRect = pdfPreview.getBoundingClientRect();
-      const x = (boxRect.left - canvasRect.left) / canvasRect.width;
-      const y = (boxRect.top - canvasRect.top) / canvasRect.height;
-      const w = boxRect.width / canvasRect.width;
-      const h = boxRect.height / canvasRect.height;
-      return {
-        x: Math.min(Math.max(x, 0), 1),
-        y: Math.min(Math.max(y, 0), 1),
-        w: Math.min(Math.max(w, 0.01), 1),
-        h: Math.min(Math.max(h, 0.01), 1)
-      };
-    }
-
-    signNowBtn.addEventListener('click', async () => {
-      try {
-        signNowBtn.disabled = true;
-        signNowBtn.textContent = 'Signing...';
-
-        const sig = signatures[Number(signatureSelect.value)] || signatures[0];
-        if (!sig) throw new Error('No signature selected.');
-
-        const sigResp = await fetch(sig.dataUrl);
-        const sigBytes = await sigResp.arrayBuffer();
-        const ratios = getPlacementRatios();
-
-        const zip = new JSZip();
-        const targets = pdfEntries.filter((e) => e.checked);
-
-        for (const entry of targets) {
-          const doc = await PDFDocument.load(entry.bytes);
-          const isPng = sig.type.includes('png') || sig.dataUrl.startsWith('data:image/png');
-          const embedded = isPng
-            ? await doc.embedPng(sigBytes)
-            : await doc.embedJpg(sigBytes);
-
-          doc.getPages().forEach((page) => {
-            const pw = page.getWidth();
-            const ph = page.getHeight();
-            const width = pw * ratios.w;
-            const height = ph * ratios.h;
-            const x = pw * ratios.x;
-            const yTop = ph * ratios.y;
-            const y = ph - yTop - height;
-
-            page.drawImage(embedded, { x, y, width, height });
-          });
-
-          const out = await doc.save();
-          const base = entry.name.replace(/\.pdf$/i, '');
-          zip.file(`${base}_signed.pdf`, out);
+    $("dayFormat").onchange = e => { state.dayFormat = +e.target.value; save(); };
+    $("blocks").oninput = e => { state.blocks = +e.target.value; save(); };
+    $("breakAt").oninput = e => { state.breakAt = +e.target.value; save(); };
+    $("breakText").oninput = e => { state.breakText = e.target.value; save(); };
+    $("headerText").oninput = e => { state.header = e.target.value; save(); };
+    $("footerText").oninput = e => { state.footer = e.target.value; save(); };
+    $("fsTime").oninput = e => { state.styles.fsTime = +e.target.value; save(); };
+    $("fsSubject").oninput = e => { state.styles.fsSubject = +e.target.value; save(); };
+    $("borderColor").oninput = e => { state.styles.border = e.target.value; save(); };
+    $("subjectInput").onkeyup = e => {
+      if (e.key === "," || e.key === "Enter") {
+        const v = e.target.value.replace(",", "").trim();
+        if (v && !state.subjects.includes(v)) {
+          state.subjects.push(v);
+          state.styles.subjectBg[v] = `hsl(${Math.random() * 360},70%,85%)`;
+          state.styles.subjectColor[v] = "#000";
         }
-
-        const blob = await zip.generateAsync({ type: 'blob' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'signed_pdfs.zip';
-        a.click();
-        URL.revokeObjectURL(a.href);
-      } catch (err) {
-        alert(`Failed to sign PDFs: ${err.message}`);
-      } finally {
-        signNowBtn.textContent = 'Sign now';
-        updateSignButton();
-      }
-    });
-
-    // Drag behavior for signature box
-    let dragging = false;
-    let offsetX = 0;
-    let offsetY = 0;
-
-    signatureBox.addEventListener('pointerdown', (e) => {
-      if (e.target !== signatureBox) return;
-      dragging = true;
-      const rect = signatureBox.getBoundingClientRect();
-      offsetX = e.clientX - rect.left;
-      offsetY = e.clientY - rect.top;
-      signatureBox.setPointerCapture(e.pointerId);
-    });
-
-    signatureBox.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      const canvasRect = pdfPreview.getBoundingClientRect();
-      const boxRect = signatureBox.getBoundingClientRect();
-      const left = Math.min(
-        Math.max(e.clientX - canvasRect.left - offsetX, 0),
-        canvasRect.width - boxRect.width
-      );
-      const top = Math.min(
-        Math.max(e.clientY - canvasRect.top - offsetY, 0),
-        canvasRect.height - boxRect.height
-      );
-      signatureBox.style.left = `${left}px`;
-      signatureBox.style.top = `${top}px`;
-    });
-
-    function endDrag(e) {
-      dragging = false;
-      try { signatureBox.releasePointerCapture(e.pointerId); } catch (_) {}
+        e.target.value = ""; save();
+      }; renderSubjectStyleControls()
+    };
+    function renderSubjectStyleControls() {
+      const wrap = document.getElementById("subjectStyleControls");
+      wrap.innerHTML = "<span>Set Background & Font color </span>";
+      const row = document.createElement("div");
+      row.className = "row";
+      state.subjects.forEach(s => {
+        state.styles.subjectBg[s] ||= `hsl(${Math.random() * 360},70%,85%)`;
+        state.styles.subjectColor[s] ||= "#000000";
+        const box = document.createElement("div");
+        box.style.display = "flex";
+        box.style.alignItems = "center";
+        box.style.gap = "6px";
+        box.style.background = state.styles.subjectBg[s];
+        box.style.color = state.styles.subjectColor[s];
+        box.innerHTML = `
+ 
+ <input type="color" value="${state.styles.subjectBg[s]}" class="bgpicker" style="background-Color:${state.styles.subjectBg[s]}">
+ <label>${s}</label>
+ <input type="color" value="${state.styles.subjectColor[s]}" class="fontpicker" >
+ `;
+        const [bg, font] = box.querySelectorAll("input");
+        bg.oninput = e => { state.styles.subjectBg[s] = e.target.value; bg.style.backgroundColor = e.target.value; box.style.backgroundColor = e.target.value; save(); };
+        font.oninput = e => { state.styles.subjectColor[s] = e.target.value; box.style.color = e.target.value; save(); };
+        row.append(box);
+      });
+      wrap.append(row);
     }
-
-    signatureBox.addEventListener('pointerup', endDrag);
-    signatureBox.addEventListener('pointercancel', endDrag);
-
-    window.addEventListener('resize', () => {
-      if (selectedPdfId) renderMainPreview();
-    });
-
-    loadSignatures();
-    renderMainPreview();
-    updateSignButton();
+    function downloadDivAsPNG(divId, fileName = "image.png") {
+      const element = document.getElementById(divId);
+      html2canvas(element, {
+        scale: 2, // higher = better quality
+        useCORS: true, // allow cross-origin images
+        backgroundColor: null // keeps transparency if needed
+      }).then(canvas => {
+        const link = document.createElement("a");
+        link.download = fileName;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      });
+    }
+    render();
+    renderSubjectStyleControls();
   </script>
 </body>
+
 </html>
