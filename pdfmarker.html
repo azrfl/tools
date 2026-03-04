@@ -995,8 +995,9 @@
             const pw = page.getWidth();
             const ph = page.getHeight();
 
-            // find placed signatures that belong to this doc + page
-            const placements = placedSigs.filter((ps) => ps.docId === doc.id && ps.page === pnum);
+            // find placed signatures to apply on this page
+            // apply all enabled signature instances (by sigId) to every page of each checked doc
+            const placements = placedSigs.filter((ps) => selectedSigIds.has(ps.sigId));
             for (const ps of placements) {
               try {
                 const sig = signatures.find((s) => s.id === ps.sigId);
@@ -1198,7 +1199,7 @@
         var el = document.getElementById('pageFooter');
         if (!el) return;
         var year = (new Date()).getFullYear();
-        var version = '1.0.0';
+        var version = '1.0.1';
         el.textContent = '© azrafulazizi@gmail.com ' + year + ' — v' + version;
       })();
   </script>
