@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Signer</title>
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --card: #fff;
+      --line: #d1d5db;
+      --text: #111827;
+      --muted: #6b7280;
+      --brand: #2563eb;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      position: relative;
+    }
+
+    .layout {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 16px;
+      padding: 16px;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+    }
+
+    .left {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 10px;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .toolbar h2 {
+      margin: 0 12px 0 0;
+      font-size: 18px;
+    }
+
+    input[type="file"],
+    select,
+    button {
+      font: inherit;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 6px 10px;
+      background: #fff;
+    }
+
+    button {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: #fff;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .preview-wrap {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: auto;
+      background: #fafafa;
+      padding: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .stage {
+      position: relative;
+      line-height: 0;
+      width: fit-content;
+      max-width: 100%;
+    }
+
+    #pdfCanvas {
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      max-width: 100%;
+      height: auto;
+    }
+
+    #sigBox {
+      position: absolute;
+      border: 2px dashed var(--danger);
+      min-width: 40px;
+      min-height: 20px;
+      resize: both;
+      overflow: hidden;
+      cursor: move;
+      display: none;
+      touch-action: none;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    #sigBox img {
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* placed signature instances (multiple) */
+    .sig-instance {
+      position: absolute;
+      border: 2px dashed var(--brand);
+      min-width: 40px;
+      min-height: 20px;
+      resize: both;
+      overflow: hidden;
+      cursor: move;
+      touch-action: none;
+      background: rgba(255, 255, 255, 0.04);
+      z-index: 50;
+    }
+
+    .sig-instance img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      user-select: none
+    }
+
+    .right {
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .pdf-list {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: auto;
+      min-height: 260px;
+      max-height: calc(100vh - 260px);
+      padding: 8px;
+      background: #fbfcff;
+    }
+
+    .pdf-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 8px;
+      background: #fff;
+      margin-bottom: 8px;
+    }
+
+    .pdf-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: start;
+      margin-bottom: 6px;
+    }
+
+    .pdf-name {
+      font-size: 12px;
+      margin: 0;
+      word-break: break-word;
+      font-weight: 600;
+    }
+
+    .pages {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(66px, 1fr));
+      gap: 6px;
+    }
+
+    .page-thumb {
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      background: #fff;
+      padding: 3px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .page-thumb.active {
+      outline: 2px solid #93c5fd;
+    }
+
+    .page-thumb canvas {
+      width: 100%;
+      display: block;
+      border: 1px solid #eee;
+    }
+
+    .page-thumb small {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .page-footer {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      z-index: 9999;
+    }
+
+    /* signature cards */
+    .sig-grid {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      overflow: auto;
+      padding: 6px 0;
+      flex-wrap: wrap;
+
+    }
+
+.sig-card {
+    border: 1px solid #e6edf8;
+    background-color: #fff;
+    background-image: repeating-linear-gradient(45deg, #fafafa 25%, transparent 25%, transparent 75%, #fafafa 75%, #fafafa), repeating-linear-gradient(45deg, #fafafa 25%, #fff 25%, #fff 75%, #fafafa 75%, #fafafa);
+    background-position: 0 0, 10px 10px;
+    background-size: 20px 20px;
+    border-radius: 8px;
+    padding: 6px;
+    min-width: 92px;
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    align-items: center;
+    font-size: 12px;
+}
+
+    .sig-card img {
+      width: 72px;
+      height: 36px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .sig-card .sig-name {
+      max-width: 72px;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .group {
+      display: block;
+      background-color: #eff4f9;
+      padding: 6px;
+      min-height: 100px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="layout">
+    <section class="panel left">
+      <div class="toolbar">
+        <h2 style="width: 100%;">PDF Bulk signature & marking tool</h2>
+        <div class="group">
+          <strong>+ Create item using Upload </strong> <br>
+          <input id="signatureInput" type="file" accept="image/png,image/jpeg,image/webp" />
+          <br>
+          *upload transparent .png file
+        </div>
+
+        <div class="group"> <strong> + Create item using text</strong> <br>
+          <label for="textSigInput">Text :</label>
+          <input id="textSigInput" type="text" placeholder="Enter text"
+            style="min-width:160px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;" />
+          <br> <label for="textFontSize">Font size:</label>
+          <input id="textFontSize" type="number" min="8" max="300" value="48"
+            style="width:80px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;" />
+          <button id="addTextSig" title="Create text signature"
+            style="margin:8px;background:transparent;border:1px solid var(--line);border-radius:6px;color:blue;padding:4px 8px;cursor:pointer">+
+            Add</button>
+        </div>
+
+
+        <div class="group">
+
+          <strong>Saved items</strong>
+          <div id="signatureContainer" class="sig-grid"></div>
+          <button id="clearSignatures" title="Clear all saved signatures"
+            style="margin:8px;background:transparent;border:1px solid var(--line);border-radius:6px;padding:4px 8px;color:var(--danger);cursor:pointer">Clear</button>
+
+          <span class="muted">Check checkbox to add item to canvas.</span>
+
+        </div>
+
+
+
+
+
+      </div>
+      <div class="preview-wrap">
+        <div class="stage" id="stage">
+          <canvas id="pdfCanvas"></canvas>
+          <div id="sigBox"><img id="sigImg" alt="signature" /></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel right">
+      <h3 style="margin:0">PDF Queue</h3>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="pdfInput" type="file" accept="application/pdf" multiple />
+        <button id="resetQueue" title="Clear all PDF queue">Reset</button>
+        <div id="loadinglabel" display="none">Loading..</div>
+      </div>
+      <div id="pdfList" class="pdf-list"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="signNow" disabled>Sign now</button>
+      </div>
+    </aside>
+  </div>
+
+
+
+  <script type="module">
+    import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.mjs';
+    import { PDFDocument } from 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm';
+    import JSZip from 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm';
+
+    // use CDN ES module worker (works with imported pdf.min.mjs)
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.min.mjs';
+
+    const signatureInput = document.getElementById('signatureInput');
+    const signatureContainer = document.getElementById('signatureContainer');
+    const sigImg = document.getElementById('sigImg');
+    const sigBox = document.getElementById('sigBox');
+    const textSigInput = document.getElementById('textSigInput');
+    const textFontSize = document.getElementById('textFontSize');
+    const addTextSig = document.getElementById('addTextSig');
+    const pdfInput = document.getElementById('pdfInput');
+    const pdfList = document.getElementById('pdfList');
+    const resetQueue = document.getElementById('resetQueue');
+    const signNow = document.getElementById('signNow');
+    const pdfCanvas = document.getElementById('pdfCanvas');
+    const stage = document.getElementById('stage');
+    const loadingdiv = document.getElementById('loadinglabel');
+
+    let signatures = [];
+    let docs = [];
+    let selectedDocId = null;
+    let selectedPage = 1;
+    // currently selected signature ids (multiple)
+    const selectedSigIds = new Set();
+    // placed signature instances on the canvas (ratios relative to canvas)
+    let placedSigs = [];
+
+    function showloading() {
+      loadingdiv.style.display = 'block'
+    }
+    function hideloading() { loadingdiv.style.display = 'none' }
+
+
+    function readAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+    }
+
+    function loadSignatures() {
+      signatures = JSON.parse(localStorage.getItem('pdf_signer_signatures') || '[]');
+      if (!Array.isArray(signatures)) signatures = [];
+      // clear enabled selection and placed instances by default
+      selectedSigIds.clear();
+      placedSigs = [];
+      renderSignatureOptions();
+      updateSigBoxPreview();
+    }
+
+    function saveSignatures() {
+      localStorage.setItem('pdf_signer_signatures', JSON.stringify(signatures));
+    }
+
+    function renderSignatureOptions() {
+      signatureContainer.innerHTML = '';
+      if (!signatures.length) {
+        const empty = document.createElement('div');
+        empty.className = 'muted';
+        empty.textContent = 'No signature saved';
+        signatureContainer.append(empty);
+        sigBox.style.display = 'none';
+        return;
+      }
+
+      // when rendering options, determine checked state per current doc+page
+      signatures.forEach((s) => {
+        const card = document.createElement('div');
+        card.className = 'sig-card';
+        card.dataset.sigId = s.id;
+
+        const img = document.createElement('img');
+        img.src = s.dataUrl;
+        img.alt = s.name || 'signature';
+
+       //const name = document.createElement('div');
+       //name.className = 'sig-name';
+       //name.textContent = s.name || '';
+
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.dataset.sigId = s.id;
+        // checked if this signature has a placed instance on the current doc+page
+        const present = placedSigs.some((p) => p.sigId === s.id && p.docId === selectedDocId && p.page === selectedPage);
+        chk.checked = present;
+        chk.addEventListener('change', () => {
+          const sid = chk.dataset.sigId;
+          if (chk.checked) {
+            // enable: ensure a single placed instance for this signature on current doc+page
+            selectedSigIds.add(sid);
+            ensurePlacedForSignature(sid);
+          } else {
+            // disable: remove any placed instance for this signature on current doc+page
+            selectedSigIds.delete(sid);
+            placedSigs = placedSigs.filter((p) => !(p.sigId === sid && p.docId === selectedDocId && p.page === selectedPage));
+            renderInstances();
+          }
+          updateSigBoxPreview();
+          updateSignNowState();
+        });
+
+        const rm = document.createElement('button');
+        rm.type = 'button';
+        rm.className = 'remove-sig';
+        rm.title = 'Remove this item';
+        rm.textContent = '✖';
+        rm.style.background = 'transparent';
+        rm.style.border = 'none';
+        rm.style.color = 'var(--danger)';
+        rm.style.cursor = 'pointer';
+        rm.style.fontSize = '14px';
+        rm.style.marginTop = '4px';
+        rm.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          const sid = s.id;
+          if (!confirm('Remove this saved item?')) return;
+          signatures = signatures.filter((x) => x.id !== sid);
+          saveSignatures();
+          // remove any placed instances for this signature across all docs/pages
+          placedSigs = placedSigs.filter((p) => p.sigId !== sid);
+          selectedSigIds.delete(sid);
+          renderSignatureOptions();
+          renderInstances();
+          updateSignNowState();
+          updateSigBoxPreview();
+        });
+
+        card.append(img, chk, rm); //  card.append(img, name, chk, rm);
+        signatureContainer.append(card);
+      });
+    }
+
+    // Ensure there is exactly one placed signature instance for `sigId`.
+    function ensurePlacedForSignature(sigId, ratios) {
+      // ensure single instance per signature per doc+page
+      const idx = placedSigs.findIndex((p) => p.sigId === sigId && p.docId === selectedDocId && p.page === selectedPage);
+      if (idx !== -1) {
+        if (ratios) placedSigs[idx] = { ...placedSigs[idx], ...ratios };
+        renderInstances();
+        return;
+      }
+
+      const crect = pdfCanvas.getBoundingClientRect();
+      const defaultRat = ratios || getDefaultPlacementRatios(crect);
+      placedSigs.push({ id: crypto.randomUUID(), sigId, docId: selectedDocId, page: selectedPage, ...defaultRat });
+      renderInstances();
+      updateSignNowState();
+      syncSigCheckboxesToPlacedSigs();
+    }
+
+    function getDefaultPlacementRatios(crect) {
+      if (!crect || !crect.width) return { x: 0.05, y: 0.05, w: 0.25, h: 0.12 };
+      const w = Math.max(40, Math.round(crect.width * 0.25));
+      const h = Math.max(20, Math.round(w * 0.45));
+      const left = Math.max((crect.width - w) / 2, 0);
+      const top = Math.max((crect.height - h) / 2, 0);
+      return { x: left / crect.width, y: top / crect.height, w: w / crect.width, h: h / crect.height };
+    }
+
+    function syncSigCheckboxesToPlacedSigs() {
+      const checks = signatureContainer.querySelectorAll('input[type="checkbox"]');
+      checks.forEach((chk) => {
+        const sid = chk.dataset.sigId;
+        const present = placedSigs.some((p) => p.sigId === sid && p.docId === selectedDocId && p.page === selectedPage);
+        chk.checked = present;
+        if (present) selectedSigIds.add(sid); else selectedSigIds.delete(sid);
+      });
+    }
+
+    function updateSigBoxPreview() {
+      const sel = signatures.find((s) => selectedSigIds.has(s.id));
+      if (!sel) {
+        sigImg.src = '';
+        // don't auto-show template box; user should click canvas to place
+        sigBox.style.display = 'none';
+        return;
+      }
+      sigImg.src = sel.dataUrl;
+      // hide template preview, placements are created via clicking stage
+      sigBox.style.display = 'none';
+      updateSignNowState();
+    }
+
+    signatureInput.addEventListener('change', async () => {
+      const file = signatureInput.files?.[0];
+      if (!file) return;
+      const dataUrl = await readAsDataURL(file);
+      signatures.push({
+        id: crypto.randomUUID(),
+        name: file.name,
+        type: file.type,
+        dataUrl
+      });
+      saveSignatures();
+      renderSignatureOptions();
+      // by default do not auto-enable the newly added signature
+      updateSigBoxPreview();
+      signatureInput.value = '';
+    });
+
+    // Create a PNG dataURL from text using given font size
+    function createTextDataUrl(text, fontSize, fontFamily = 'Segoe UI, Roboto, sans-serif') {
+      const padding = Math.round(fontSize * 0.4);
+      const tmp = document.createElement('canvas');
+      const ctx = tmp.getContext('2d');
+      ctx.font = `${fontSize}px ${fontFamily}`;
+      const metrics = ctx.measureText(text || '');
+      // approximate height
+      const textWidth = Math.ceil(metrics.width || fontSize * text.length * 0.6);
+      const textHeight = Math.ceil(fontSize * 1.2);
+      tmp.width = textWidth + padding * 2;
+      tmp.height = textHeight + padding * 2;
+      const ctx2 = tmp.getContext('2d');
+      ctx2.clearRect(0, 0, tmp.width, tmp.height);
+      ctx2.font = `${fontSize}px ${fontFamily}`;
+      ctx2.textBaseline = 'top';
+      ctx2.fillStyle = '#000';
+      ctx2.fillText(text, padding, padding);
+      return tmp.toDataURL('image/png');
+    }
+
+    addTextSig.addEventListener('click', (e) => {
+      const txt = (textSigInput.value || '').trim();
+      if (!txt) { alert('Enter text for signature'); return; }
+      const fs = parseInt(textFontSize.value, 10) || 48;
+      const dataUrl = createTextDataUrl(txt, fs);
+      const name = `text-${txt.substring(0, 24).replace(/\s+/g, '_')}`;
+      signatures.push({ id: crypto.randomUUID(), name, type: 'image/png', dataUrl });
+      saveSignatures();
+      renderSignatureOptions();
+      // do not auto-enable per current behavior; clear input
+      textSigInput.value = '';
+      updateSigBoxPreview();
+    });
+
+
+    // Clear saved signatures button
+    const clearSignatures = document.getElementById('clearSignatures');
+    clearSignatures.addEventListener('click', () => {
+      if (!signatures.length) return;
+      if (!confirm('Remove all saved signatures?')) return;
+      signatures = [];
+      saveSignatures();
+      renderSignatureOptions();
+      selectedSigIds.clear();
+      sigImg.src = '';
+      sigBox.style.display = 'none';
+      updateSignNowState();
+    });
+
+    pdfInput.addEventListener('change', async () => {
+      showloading();
+      const files = Array.from(pdfInput.files || []);
+      for (const file of files) {
+        const bytes = await file.arrayBuffer();
+        // pdf.js may transfer the ArrayBuffer to its worker, detaching it here.
+        // Create two independent copies: one for pdf.js (which may be transferred),
+        // and one to store in `docs` for later reuse.
+        const bytesForPdf = bytes.slice(0);
+        const bytesStore = bytes.slice(0);
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(bytesForPdf), disableStream: true, disableRange: true }).promise;
+        const pageThumbs = [];
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const vp = page.getViewport({ scale: 0.18 });
+          const c = document.createElement('canvas');
+          c.width = vp.width;
+          c.height = vp.height;
+          await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+          pageThumbs.push(c.toDataURL('image/png'));
+        }
+
+        docs.push({
+          id: crypto.randomUUID(),
+          name: file.name,
+          bytes: bytesStore,
+          fileRef: file,
+          pageCount: pdf.numPages,
+          checked: true,
+          thumbs: pageThumbs
+        });
+      }
+
+      if (!selectedDocId && docs.length) selectedDocId = docs[0].id;
+      selectedPage = 1;
+      renderPdfList();
+      await renderMainPreview();
+      updateSignNowState();
+      pdfInput.value = '';
+      hideloading()
+    });
+
+    // Reset queue handler
+    resetQueue.addEventListener('click', () => {
+      if (!docs.length) return;
+      if (!confirm('Clear all PDFs from queue?')) return;
+      docs = [];
+      selectedDocId = null;
+      selectedPage = 1;
+      renderPdfList();
+      renderMainPreview();
+      updateSignNowState();
+      pdfInput.value = '';
+    });
+
+    function renderPdfList() {
+      pdfList.innerHTML = '';
+      docs.forEach((doc) => {
+        const card = document.createElement('div');
+        card.className = 'pdf-card';
+
+        const head = document.createElement('div');
+        head.className = 'pdf-head';
+
+        const left = document.createElement('div');
+        const name = document.createElement('p');
+        name.className = 'pdf-name';
+        name.textContent = doc.name;
+        const cnt = document.createElement('small');
+        cnt.className = 'muted';
+        cnt.textContent = `${doc.pageCount} page(s)`;
+        left.append(name, cnt);
+
+        const chkWrap = document.createElement('label');
+        chkWrap.className = 'muted';
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.checked = doc.checked;
+        chk.addEventListener('change', () => {
+          doc.checked = chk.checked;
+          updateSignNowState();
+        });
+        chkWrap.append(chk, document.createTextNode(' Include'));
+
+        const controls = document.createElement('div');
+        controls.style.display = 'flex';
+        controls.style.flexDirection = 'column';
+        controls.style.alignItems = 'flex-end';
+
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = '🗑';
+        removeBtn.style.color = 'orange';
+        removeBtn.style.background = 'transparent';
+        removeBtn.style.border = '1px solid var(--line)';
+        removeBtn.style.borderRadius = '3px';
+        removeBtn.style.padding = '1px 2px';
+        removeBtn.style.cursor = 'pointer';
+        removeBtn.addEventListener('click', () => {
+          removeDocById(doc.id);
+        });
+
+        controls.append(removeBtn, chkWrap);
+
+        head.append(left, controls);
+
+        const pages = document.createElement('div');
+        pages.className = 'pages';
+        doc.thumbs.forEach((thumb, idx) => {
+          const p = idx + 1;
+          const tile = document.createElement('div');
+          tile.className = 'page-thumb';
+          if (doc.id === selectedDocId && p === selectedPage) tile.classList.add('active');
+
+          const c = document.createElement('canvas');
+          const img = new Image();
+          img.onload = () => {
+            c.width = 60;
+            c.height = 80;
+            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          };
+          img.src = thumb;
+
+          const label = document.createElement('small');
+          label.textContent = `P${p}`;
+
+          tile.append(c, label);
+          tile.addEventListener('click', async () => {
+            selectedDocId = doc.id;
+            selectedPage = p;
+            renderPdfList();
+            await renderMainPreview();
+          });
+
+          pages.append(tile);
+        });
+
+        card.append(head, pages);
+        pdfList.append(card);
+      });
+    }
+
+    function removeDocById(id) {
+      const idx = docs.findIndex((d) => d.id === id);
+      if (idx === -1) return;
+      docs.splice(idx, 1);
+      if (selectedDocId === id) {
+        selectedDocId = docs.length ? docs[0].id : null;
+        selectedPage = 1;
+      }
+      renderPdfList();
+      renderMainPreview();
+      updateSignNowState();
+    }
+
+    async function renderMainPreview() {
+      const doc = docs.find((d) => d.id === selectedDocId);
+      const ctx = pdfCanvas.getContext('2d');
+
+      if (!doc) {
+        pdfCanvas.width = 640;
+        pdfCanvas.height = 420;
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, pdfCanvas.width, pdfCanvas.height);
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '18px sans-serif';
+        ctx.fillText('Upload PDFs to start.', 20, 40);
+        sigBox.style.display = 'none';
+        return;
+      }
+
+      // Ensure we pass a fresh Uint8Array and disable streaming/range requests
+      const dataForPdfjs = doc.bytes instanceof Uint8Array ? doc.bytes : new Uint8Array(doc.bytes);
+      const pdf = await pdfjsLib.getDocument({ data: dataForPdfjs, disableStream: true, disableRange: true }).promise;
+      const page = await pdf.getPage(selectedPage);
+      const raw = page.getViewport({ scale: 1 });
+      const maxW = Math.min(stage.parentElement.clientWidth - 24, 900);
+      const scale = Math.max(0.25, maxW / raw.width);
+      const vp = page.getViewport({ scale });
+      pdfCanvas.width = vp.width;
+      pdfCanvas.height = vp.height;
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+
+      // re-render placed instances (if any)
+      renderInstances();
+      // sync checkboxes to placements for current doc+page
+      syncSigCheckboxesToPlacedSigs();
+      updateSigBoxPreview();
+    }
+
+    function updateSignNowState() {
+      signNow.disabled = !placedSigs.length || !docs.some((d) => d.checked);
+    }
+
+    function getPlacementRatioFromRect(rect, canvasRect) {
+      return {
+        x: Math.min(Math.max((rect.left - canvasRect.left) / canvasRect.width, 0), 1),
+        y: Math.min(Math.max((rect.top - canvasRect.top) / canvasRect.height, 0), 1),
+        w: Math.min(Math.max(rect.width / canvasRect.width, 0.01), 1),
+        h: Math.min(Math.max(rect.height / canvasRect.height, 0.01), 1)
+      };
+    }
+
+    signNow.addEventListener('click', async () => {
+      try {
+        signNow.disabled = true;
+        signNow.textContent = 'Signing...';
+
+        if (!placedSigs.length) throw new Error('No placed signatures. Click the preview to place signatures.');
+
+        const zip = new JSZip();
+
+        for (const doc of docs.filter((d) => d.checked)) {
+          let sourceBytes = doc.bytes;
+          if (doc.fileRef) {
+            sourceBytes = await doc.fileRef.arrayBuffer();
+          }
+          const bytesForPdfLib = sourceBytes instanceof ArrayBuffer ? sourceBytes.slice(0) : sourceBytes;
+          const pdfDoc = await PDFDocument.load(bytesForPdfLib);
+
+          const pages = pdfDoc.getPages();
+          for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+            const page = pages[pageIndex];
+            const pnum = pageIndex + 1;
+            const pw = page.getWidth();
+            const ph = page.getHeight();
+
+            // find placed signatures that belong to this doc + page
+            const placements = placedSigs.filter((ps) => ps.docId === doc.id && ps.page === pnum);
+            for (const ps of placements) {
+              try {
+                const sig = signatures.find((s) => s.id === ps.sigId);
+                if (!sig) continue;
+                const r = ps; // ratios x,y,w,h
+                const width = pw * r.w;
+                const height = ph * r.h;
+                const x = pw * r.x;
+                const baseY = ph - (ph * r.y);
+                const y = baseY - height;
+
+                const fetched = await fetch(sig.dataUrl);
+                const bytes = await fetched.arrayBuffer();
+                const isPng = sig.type?.includes('png') || sig.dataUrl?.startsWith('data:image/png');
+                const img = isPng ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes);
+                page.drawImage(img, { x, y, width, height });
+              } catch (innerErr) {
+                throw new Error(`Failed to embed signature ${ps.sigId} on ${doc.name} page ${ps.page}: ${innerErr?.message || innerErr}`);
+              }
+            }
+          }
+
+          const out = await pdfDoc.save();
+          const base = doc.name.replace(/\.pdf$/i, '');
+          zip.file(`${base}_signed.pdf`, out);
+        }
+
+        const blob = await zip.generateAsync({ type: 'blob' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'signed_pdfs.zip';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      } catch (error) {
+        alert(`Signing failed: ${error.message}`);
+      } finally {
+        signNow.textContent = 'Sign now';
+        updateSignNowState();
+      }
+    });
+
+    // helper: render placed signature instances inside stage
+    function renderInstances() {
+      // remove existing DOM instances
+      const existing = Array.from(stage.querySelectorAll('.sig-instance'));
+      existing.forEach((el) => el.remove());
+
+      const crect = pdfCanvas.getBoundingClientRect();
+      placedSigs.forEach((ps) => {
+        const el = document.createElement('div');
+        el.className = 'sig-instance';
+        el.dataset.instanceId = ps.id;
+        el.dataset.sigId = ps.sigId;
+        const img = document.createElement('img');
+        const sig = signatures.find((s) => s.id === ps.sigId);
+        img.src = sig ? sig.dataUrl : '';
+        el.appendChild(img);
+
+        // compute absolute position from ratios
+        // only render instances that belong to the currently selected doc+page
+        if (ps.docId !== selectedDocId || ps.page !== selectedPage) return;
+        const left = Math.round(ps.x * crect.width);
+        const top = Math.round(ps.y * crect.height);
+        const width = Math.round(ps.w * crect.width);
+        const height = Math.round(ps.h * crect.height);
+        el.style.left = `${left}px`;
+        el.style.top = `${top}px`;
+        el.style.width = `${width}px`;
+        el.style.height = `${height}px`;
+
+        // drag handlers
+        let dragging = false;
+        let offX = 0, offY = 0;
+        el.addEventListener('pointerdown', (ev) => {
+          if (ev.target !== el) return;
+          dragging = true;
+          const r = el.getBoundingClientRect();
+          offX = ev.clientX - r.left;
+          offY = ev.clientY - r.top;
+          el.setPointerCapture(ev.pointerId);
+        });
+        el.addEventListener('pointermove', (ev) => {
+          if (!dragging) return;
+          const c = pdfCanvas.getBoundingClientRect();
+          const b = el.getBoundingClientRect();
+          const left = Math.min(Math.max(ev.clientX - c.left - offX, 0), c.width - b.width);
+          const top = Math.min(Math.max(ev.clientY - c.top - offY, 0), c.height - b.height);
+          el.style.left = `${left}px`;
+          el.style.top = `${top}px`;
+        });
+        function stopDragInstance(ev) {
+          if (!dragging) return;
+          dragging = false;
+          try { el.releasePointerCapture(ev.pointerId); } catch (_) { }
+          // save new ratios
+          const crect = pdfCanvas.getBoundingClientRect();
+          const r = el.getBoundingClientRect();
+          const newRat = getPlacementRatioFromRect(r, crect);
+          const idx = placedSigs.findIndex((p) => p.id === ps.id);
+          if (idx !== -1) placedSigs[idx] = { ...placedSigs[idx], ...newRat };
+          updateSignNowState();
+        }
+        el.addEventListener('pointerup', stopDragInstance);
+        el.addEventListener('pointercancel', stopDragInstance);
+
+        // update ratios after native resize (on pointerup)
+        el.addEventListener('dblclick', () => {
+          // double click to remove
+          placedSigs = placedSigs.filter((p) => p.id !== ps.id);
+          renderInstances();
+          updateSignNowState();
+          // reflect removal in signature checkboxes
+          syncSigCheckboxesToPlacedSigs();
+        });
+
+        el.addEventListener('pointerup', () => {
+          const crect = pdfCanvas.getBoundingClientRect();
+          const r = el.getBoundingClientRect();
+          const newRat = getPlacementRatioFromRect(r, crect);
+          const idx = placedSigs.findIndex((p) => p.id === ps.id);
+          if (idx !== -1) placedSigs[idx] = { ...placedSigs[idx], ...newRat };
+        });
+
+        stage.appendChild(el);
+      });
+    }
+
+    // clicking on stage (canvas area) will move the single enabled signature for current doc+page
+    stage.addEventListener('click', (e) => {
+      if (!(e.target === stage || e.target === pdfCanvas)) return;
+      if (!selectedDocId) return;
+      // if none enabled, ask user to use checkboxes to add a signature
+      if (!selectedSigIds.size) { alert('Enable a signature using the checkbox to add it to the canvas.'); return; }
+      // if multiple enabled, ask user to reposition via drag
+      if (selectedSigIds.size > 1) { alert('Multiple signatures enabled — drag an instance to reposition.'); return; }
+
+      // exactly one enabled: move that instance to click location (or create it)
+      const sid = Array.from(selectedSigIds)[0];
+      const crect = pdfCanvas.getBoundingClientRect();
+      const clickX = e.clientX - crect.left;
+      const clickY = e.clientY - crect.top;
+      const w = Math.max(40, Math.round(crect.width * 0.25));
+      const h = Math.max(20, Math.round(w * 0.45));
+      const left = Math.min(Math.max(clickX - w/2, 0), crect.width - w);
+      const top = Math.min(Math.max(clickY - h/2, 0), crect.height - h);
+      const ratios = { x: left / crect.width, y: top / crect.height, w: w / crect.width, h: h / crect.height };
+      ensurePlacedForSignature(sid, ratios);
+    });
+
+    window.addEventListener('resize', async () => {
+      if (selectedDocId) await renderMainPreview();
+    });
+
+    loadSignatures();
+    renderMainPreview();
+    updateSignNowState();
+    hideloading()
+  </script>
+  <div id="pageFooter" class="page-footer" aria-hidden="true"></div>
+  <script>
+      (function () {
+        var el = document.getElementById('pageFooter');
+        if (!el) return;
+        var year = (new Date()).getFullYear();
+        var version = '1.0.0';
+        el.textContent = '©TGQASS azraful@topglove.com.my ' + year + ' — v' + version;
+      })();
+  </script>
+</body>
+
+</html>
