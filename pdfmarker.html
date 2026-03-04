@@ -159,6 +159,11 @@
       user-select: none
     }
 
+    .sig-instance.selected {
+      outline: 3px solid rgba(37,99,235,0.9);
+      z-index: 999;
+    }
+
     .right {
       display: grid;
       grid-template-rows: auto auto 1fr auto;
@@ -302,8 +307,8 @@
         <div class="group">
           <strong>+ Create item using Upload </strong> <br>
           <input id="signatureInput" type="file" accept="image/png,image/jpeg,image/webp" />
-          <br>
-          *upload transparent .png file
+          <br> <div class="muted" >
+          *upload transparent .png file      </div>
         </div>
 
         <div class="group"> <strong> + Create item using text</strong> <br>
@@ -318,6 +323,20 @@
             Add</button>
         </div>
 
+      <div class="group" id="placementControls" >
+        <strong>Placement Controls</strong>
+     
+        <br>
+          <label class="muted">W(px):</label>
+          <input id="instWidth" type="number" min="1" style="width:70px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;" />
+          <label class="muted">H(px):</label>
+          <input id="instHeight" type="number" min="1" style="width:70px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;" />
+          <br> 
+        <label style="margin-right:8px"><input id="instLockAspect" type="checkbox" checked /> Lock aspect</label>
+          <button id="instRemove" style="background:transparent;border:1px solid var(--line);margin:5px;border-radius:6px;padding:4px 8px;color:var(--danger);cursor:pointer">Remove</button>
+       <br>
+        <div class="muted" >Uncheck Lock to stretch.</div>
+      </div>
 
         <div class="group">
 
@@ -351,8 +370,9 @@
         <div id="loadinglabel" display="none">Loading..</div>
       </div>
       <div id="pdfList" class="pdf-list"></div>
+
       <div style="display:flex;gap:8px;margin-top:8px">
-        <button id="signNow" disabled>Sign now</button>
+        <button id="signNow" disabled>Execute</button>
       </div>
     </aside>
   </div>
@@ -381,6 +401,130 @@
     const pdfCanvas = document.getElementById('pdfCanvas');
     const stage = document.getElementById('stage');
     const loadingdiv = document.getElementById('loadinglabel');
+
+    // placement control elements
+    const instWidth = document.getElementById('instWidth');
+    const instHeight = document.getElementById('instHeight');
+    const instLockAspect = document.getElementById('instLockAspect');
+    const instRemove = document.getElementById('instRemove');
+
+    // selection + aspect management
+    let selectedInstanceId = null;
+    let currentAspect = 1; // width / height
+
+    function deselectInstance() {
+      if (!selectedInstanceId) return;
+      const prev = stage.querySelector(`.sig-instance[data-instance-id="${selectedInstanceId}"]`);
+      if (prev) prev.classList.remove('selected');
+      selectedInstanceId = null;
+      instWidth.value = '';
+      instHeight.value = '';
+    }
+
+    function selectInstance(id, el) {
+      deselectInstance();
+      selectedInstanceId = id;
+      if (el) el.classList.add('selected');
+      // compute current pixel size and aspect
+      const r = el.getBoundingClientRect();
+      instWidth.value = Math.round(r.width);
+      instHeight.value = Math.round(r.height);
+      currentAspect = r.width / Math.max(r.height, 1);
+      // set object-fit depending on lock
+      const img = el.querySelector('img');
+      if (img) img.style.objectFit = instLockAspect.checked ? 'contain' : 'fill';
+    }
+
+    function updatePlacementControlsForSelected() {
+      if (!selectedInstanceId) return;
+      const el = stage.querySelector(`.sig-instance[data-instance-id="${selectedInstanceId}"]`);
+      if (!el) return;
+      const crect = pdfCanvas.getBoundingClientRect();
+      const w = parseInt(instWidth.value, 10) || Math.round(el.getBoundingClientRect().width);
+      const h = parseInt(instHeight.value, 10) || Math.round(el.getBoundingClientRect().height);
+      // preserve top-left: compute current offsets relative to canvas, reapply after size change
+      const beforeRect = el.getBoundingClientRect();
+      const relLeft = Math.round(beforeRect.left - crect.left);
+      const relTop = Math.round(beforeRect.top - crect.top);
+      el.style.width = w + 'px';
+      el.style.height = h + 'px';
+      el.style.left = relLeft + 'px';
+      el.style.top = relTop + 'px';
+      // update image fit
+      const img = el.querySelector('img');
+      if (img) img.style.objectFit = instLockAspect.checked ? 'contain' : 'fill';
+      // persist ratios
+      const r = el.getBoundingClientRect();
+      const newRat = getPlacementRatioFromRect(r, crect);
+      const idx = placedSigs.findIndex((p) => p.id === selectedInstanceId);
+      if (idx !== -1) placedSigs[idx] = { ...placedSigs[idx], ...newRat };
+      updateSignNowState();
+    }
+
+    instWidth.addEventListener('input', () => {
+      if (!selectedInstanceId) return;
+      const w = parseInt(instWidth.value, 10) || 1;
+      const el = stage.querySelector(`.sig-instance[data-instance-id="${selectedInstanceId}"]`);
+      if (!el) return;
+      const crect = pdfCanvas.getBoundingClientRect();
+      const beforeRect = el.getBoundingClientRect();
+      const relLeft = Math.round(beforeRect.left - crect.left);
+      const relTop = Math.round(beforeRect.top - crect.top);
+      if (instLockAspect.checked) {
+        const h = Math.max(1, Math.round(w / currentAspect));
+        instHeight.value = h;
+        el.style.width = w + 'px';
+        el.style.height = h + 'px';
+      } else {
+        el.style.width = w + 'px';
+      }
+      // reapply top-left so element doesn't move while resizing
+      el.style.left = relLeft + 'px';
+      el.style.top = relTop + 'px';
+      updatePlacementControlsForSelected();
+    });
+
+    instHeight.addEventListener('input', () => {
+      if (!selectedInstanceId) return;
+      const h = parseInt(instHeight.value, 10) || 1;
+      const el = stage.querySelector(`.sig-instance[data-instance-id="${selectedInstanceId}"]`);
+      if (!el) return;
+      const crect = pdfCanvas.getBoundingClientRect();
+      const beforeRect = el.getBoundingClientRect();
+      const relLeft = Math.round(beforeRect.left - crect.left);
+      const relTop = Math.round(beforeRect.top - crect.top);
+      if (instLockAspect.checked) {
+        const w = Math.max(1, Math.round(h * currentAspect));
+        instWidth.value = w;
+        el.style.width = w + 'px';
+        el.style.height = h + 'px';
+      } else {
+        el.style.height = h + 'px';
+      }
+      el.style.left = relLeft + 'px';
+      el.style.top = relTop + 'px';
+      updatePlacementControlsForSelected();
+    });
+
+    instLockAspect.addEventListener('change', () => {
+      if (!selectedInstanceId) return;
+      const el = stage.querySelector(`.sig-instance[data-instance-id="${selectedInstanceId}"]`);
+      if (!el) return;
+      const img = el.querySelector('img');
+      if (img) img.style.objectFit = instLockAspect.checked ? 'contain' : 'fill';
+      // recompute aspect from current rect
+      const r = el.getBoundingClientRect();
+      currentAspect = r.width / Math.max(r.height, 1);
+    });
+
+    instRemove.addEventListener('click', () => {
+      if (!selectedInstanceId) return;
+      placedSigs = placedSigs.filter((p) => p.id !== selectedInstanceId);
+      deselectInstance();
+      renderInstances();
+      updateSignNowState();
+      syncSigCheckboxesToPlacedSigs();
+    });
 
     let signatures = [];
     let docs = [];
@@ -512,6 +656,14 @@
       const defaultRat = ratios || getDefaultPlacementRatios(crect);
       placedSigs.push({ id: crypto.randomUUID(), sigId, docId: selectedDocId, page: selectedPage, ...defaultRat });
       renderInstances();
+      // select the newly created instance to allow immediate sizing
+      setTimeout(() => {
+        const last = placedSigs[placedSigs.length - 1];
+        if (last) {
+          const el = stage.querySelector(`.sig-instance[data-instance-id="${last.id}"]`);
+          if (el) selectInstance(last.id, el);
+        }
+      }, 0);
       updateSignNowState();
       syncSigCheckboxesToPlacedSigs();
     }
@@ -881,7 +1033,7 @@
       } catch (error) {
         alert(`Signing failed: ${error.message}`);
       } finally {
-        signNow.textContent = 'Sign now';
+        signNow.textContent = 'Execute';
         updateSignNowState();
       }
     });
@@ -889,6 +1041,8 @@
     // helper: render placed signature instances inside stage
     function renderInstances() {
       // remove existing DOM instances
+      // clear selection when re-rendering
+      deselectInstance();
       const existing = Array.from(stage.querySelectorAll('.sig-instance'));
       existing.forEach((el) => el.remove());
 
@@ -901,6 +1055,7 @@
         const img = document.createElement('img');
         const sig = signatures.find((s) => s.id === ps.sigId);
         img.src = sig ? sig.dataUrl : '';
+        img.style.objectFit = instLockAspect && instLockAspect.checked ? 'contain' : 'fill';
         el.appendChild(img);
 
         // compute absolute position from ratios
@@ -924,7 +1079,9 @@
           const r = el.getBoundingClientRect();
           offX = ev.clientX - r.left;
           offY = ev.clientY - r.top;
-          el.setPointerCapture(ev.pointerId);
+          try { el.setPointerCapture(ev.pointerId); } catch (_) {}
+          // select this instance for editing
+          selectInstance(ps.id, el);
         });
         el.addEventListener('pointermove', (ev) => {
           if (!dragging) return;
@@ -941,8 +1098,23 @@
           try { el.releasePointerCapture(ev.pointerId); } catch (_) { }
           // save new ratios
           const crect = pdfCanvas.getBoundingClientRect();
-          const r = el.getBoundingClientRect();
-          const newRat = getPlacementRatioFromRect(r, crect);
+          // compute and preserve top-left while adjusting size for aspect lock
+          const beforeRect = el.getBoundingClientRect();
+          const relLeft = Math.round(beforeRect.left - crect.left);
+          const relTop = Math.round(beforeRect.top - crect.top);
+          let newRat = getPlacementRatioFromRect(beforeRect, crect);
+          if (selectedInstanceId === ps.id && instLockAspect.checked) {
+            const widthPx = Math.round(newRat.w * crect.width);
+            const heightPx = Math.max(1, Math.round(widthPx / currentAspect));
+            el.style.width = widthPx + 'px';
+            el.style.height = heightPx + 'px';
+            // reapply top-left
+            el.style.left = relLeft + 'px';
+            el.style.top = relTop + 'px';
+            newRat = getPlacementRatioFromRect(el.getBoundingClientRect(), crect);
+            instWidth.value = Math.round(widthPx);
+            instHeight.value = Math.round(heightPx);
+          }
           const idx = placedSigs.findIndex((p) => p.id === ps.id);
           if (idx !== -1) placedSigs[idx] = { ...placedSigs[idx], ...newRat };
           updateSignNowState();
@@ -962,8 +1134,21 @@
 
         el.addEventListener('pointerup', () => {
           const crect = pdfCanvas.getBoundingClientRect();
-          const r = el.getBoundingClientRect();
-          const newRat = getPlacementRatioFromRect(r, crect);
+          const beforeRect = el.getBoundingClientRect();
+          const relLeft = Math.round(beforeRect.left - crect.left);
+          const relTop = Math.round(beforeRect.top - crect.top);
+          let newRat = getPlacementRatioFromRect(beforeRect, crect);
+          if (selectedInstanceId === ps.id && instLockAspect.checked) {
+            const widthPx = Math.round(newRat.w * crect.width);
+            const heightPx = Math.max(1, Math.round(widthPx / currentAspect));
+            el.style.width = widthPx + 'px';
+            el.style.height = heightPx + 'px';
+            el.style.left = relLeft + 'px';
+            el.style.top = relTop + 'px';
+            newRat = getPlacementRatioFromRect(el.getBoundingClientRect(), crect);
+            instWidth.value = Math.round(widthPx);
+            instHeight.value = Math.round(heightPx);
+          }
           const idx = placedSigs.findIndex((p) => p.id === ps.id);
           if (idx !== -1) placedSigs[idx] = { ...placedSigs[idx], ...newRat };
         });
@@ -972,10 +1157,14 @@
       });
     }
 
-    // clicking on stage (canvas area) will move the single enabled signature for current doc+page
+    // clicking on stage (canvas area): if an instance is selected, deselect it.
+    // If no instance is selected, preserve previous behavior of placing/moving a single enabled signature.
     stage.addEventListener('click', (e) => {
       if (!(e.target === stage || e.target === pdfCanvas)) return;
       if (!selectedDocId) return;
+      // If user has an instance selected, clicking the canvas should deselect it (do not relocate)
+      if (selectedInstanceId) { deselectInstance(); return; }
+
       // if none enabled, ask user to use checkboxes to add a signature
       if (!selectedSigIds.size) { alert('Enable a signature using the checkbox to add it to the canvas.'); return; }
       // if multiple enabled, ask user to reposition via drag
