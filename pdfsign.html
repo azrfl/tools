@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PDF Signer</title>
+  <title>azrfl|PDF Marker</title>
+  <!-- Google Fonts: common, handwriting and block selections (added Dynalight, Pinyon Script, Anton, Bebas Neue, Archivo Black) -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Noto+Sans:wght@400;700&family=Pacifico&family=Sacramento&family=Great+Vibes&family=Dancing+Script:wght@400;700&family=Satisfy&family=Dynalight&family=Pinyon+Script&family=Anton&family=Bebas+Neue&family=Archivo+Black&display=swap">
   <style>
     :root {
       --bg: #f3f4f6;
@@ -15,7 +18,9 @@
       --danger: #ef4444;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -61,7 +66,9 @@
       font-size: 18px;
     }
 
-    input[type="file"], select, button {
+    input[type="file"],
+    select,
+    button {
       font: inherit;
       border: 1px solid var(--line);
       border-radius: 7px;
@@ -81,7 +88,10 @@
       cursor: not-allowed;
     }
 
-    .muted { color: var(--muted); font-size: 12px; }
+    .muted {
+      color: var(--muted);
+      font-size: 12px;
+    }
 
     .preview-wrap {
       border: 1px solid var(--line);
@@ -111,8 +121,8 @@
     #sigBox {
       position: absolute;
       border: 2px dashed var(--danger);
-      min-width: 40px;
-      min-height: 20px;
+      min-width: 24px;
+      min-height: 14px;
       resize: both;
       overflow: hidden;
       cursor: move;
@@ -127,6 +137,33 @@
       object-fit: fill;
       pointer-events: none;
       user-select: none;
+    }
+
+    /* placed signature instances (multiple) */
+    .sig-instance {
+      position: absolute;
+      border: 2px dashed var(--brand);
+      min-width: 24px;
+      min-height: 14px;
+      resize: both;
+      overflow: hidden;
+      cursor: move;
+      touch-action: none;
+      background: rgba(255, 255, 255, 0.04);
+      z-index: 50;
+    }
+
+    .sig-instance img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      user-select: none
+    }
+
+    .sig-instance.selected {
+      outline: 3px solid rgba(37,99,235,0.9);
+      z-index: 999;
     }
 
     .right {
@@ -145,7 +182,7 @@
       padding: 8px;
       background: #fbfcff;
     }
-    
+
     .pdf-card {
       border: 1px solid #e5e7eb;
       border-radius: 8px;
@@ -198,6 +235,7 @@
       font-size: 10px;
       color: var(--muted);
     }
+
     .page-footer {
       position: absolute;
       bottom: 8px;
@@ -205,25 +243,120 @@
       transform: translateX(-50%);
       font-size: 12px;
       color: var(--muted);
-      background: rgba(255,255,255,0.9);
+      background: rgba(255, 255, 255, 0.9);
       padding: 6px 10px;
       border-radius: 8px;
       border: 1px solid var(--line);
       z-index: 9999;
     }
+
+    /* signature cards */
+    .sig-grid {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      overflow: auto;
+      padding: 6px 0;
+      flex-wrap: wrap;
+
+    }
+
+.sig-card {
+    border: 1px solid #e6edf8;
+    background-color: #fff;
+    background-image: repeating-linear-gradient(45deg, #fafafa 25%, transparent 25%, transparent 75%, #fafafa 75%, #fafafa), repeating-linear-gradient(45deg, #fafafa 25%, #fff 25%, #fff 75%, #fafafa 75%, #fafafa);
+    background-position: 0 0, 10px 10px;
+    background-size: 20px 20px;
+    border-radius: 8px;
+    padding: 6px;
+    min-width: 92px;
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    align-items: center;
+    font-size: 12px;
+}
+
+    .sig-card img {
+      width: 72px;
+      height: 36px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .sig-card .sig-name {
+      max-width: 72px;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .group {
+      display: block;
+      background-color: #eff4f9;
+      padding: 6px;
+      min-height: 100px;
+    }
   </style>
 </head>
+
 <body>
   <div class="layout">
     <section class="panel left">
       <div class="toolbar">
-        <h2>PDF Sign Preview</h2>
-        <label for="signatureInput">Signature file</label>
-        <input id="signatureInput" type="file" accept="image/png,image/jpeg,image/webp" />
-        <label for="signatureSelect">Saved signatures</label>
-        <select id="signatureSelect"></select>
-        <button id="clearSignatures" title="Clear all saved signatures" style="margin-left:8px;background:transparent;border:1px solid var(--line);border-radius:6px;padding:4px 8px;color:var(--danger);cursor:pointer">Clear</button>
-        <span class="muted">Drag and resize the red box on preview.</span>
+        <h2 style="width: 100%;">PDF Bulk signature & marking tool</h2>
+        <div class="group">
+          <strong>+ Create item using Upload </strong> <br>
+          <input id="signatureInput" type="file" accept="image/png,image/jpeg,image/webp" />
+          <br> <div class="muted" >
+          *upload transparent .png file      </div>
+        </div>
+
+        <div class="group"> <strong> + Create item using text</strong> <br>
+          <label for="textSigInput">Text :</label>
+          <input id="textSigInput" type="text" placeholder="Enter text"
+            style="min-width:160px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;" />
+         <label for="textFontSize">Font size:</label>
+          <input id="textFontSize" type="number" min="8" max="300" value="48"
+            style="width:70px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;" /> <br> 
+            Font Style: <select id="fontselect" style="width:180px;"></select>
+          <button id="addTextSig" title="Create text signature"
+            style="margin:8px;background:transparent;border:1px solid var(--line);border-radius:6px;color:blue;padding:4px 8px;cursor:pointer">+
+            Add</button>
+        </div>
+
+      <div class="group" id="placementControls" >
+        <strong>Placement Controls</strong>
+     
+        <br>
+          <label class="muted">W(px):</label>
+          <input id="instWidth" type="number" min="1" style="width:70px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;" />
+          <label class="muted">H(px):</label>
+          <input id="instHeight" type="number" min="1" style="width:70px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;" />
+          <br> 
+        <label style="margin-right:8px"><input id="instLockAspect" type="checkbox" /> Lock aspect</label>
+          <button id="instRemove" style="background:transparent;border:1px solid var(--line);margin:5px;border-radius:6px;padding:4px 8px;color:var(--danger);cursor:pointer">Remove</button>
+       <br>
+        <div class="muted" >Uncheck Lock to stretch.</div>
+      </div>
+
+        <div class="group">
+
+          <strong>Saved items</strong>   <button id="clearSignatures" title="Clear all saved signatures"
+            style="margin:8px;background:transparent;border:1px solid var(--line);border-radius:6px;padding:4px 8px;color:var(--danger);cursor:pointer">Clear</button>
+             <span class="muted">Check checkbox to add item to canvas.</span>
+          <div id="signatureContainer" class="sig-grid"></div>
+       
+
+         
+
+        </div>
+
+
+
+
+
       </div>
       <div class="preview-wrap">
         <div class="stage" id="stage">
@@ -237,11 +370,13 @@
       <h3 style="margin:0">PDF Queue</h3>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <input id="pdfInput" type="file" accept="application/pdf" multiple />
-        <button id="resetQueue" title="Clear all PDF queue">Reset</button> <div id="loadinglabel" display="none">Loading..</div>
+        <button id="resetQueue" title="Clear all PDF queue">Reset</button>
+        <div id="loadinglabel" display="none">Loading..</div>
       </div>
       <div id="pdfList" class="pdf-list"></div>
+
       <div style="display:flex;gap:8px;margin-top:8px">
-        <button id="signNow" disabled>Sign now</button>
+        <button id="signNow" disabled>Execute</button>
       </div>
     </aside>
   </div>
@@ -257,9 +392,13 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.min.mjs';
 
     const signatureInput = document.getElementById('signatureInput');
-    const signatureSelect = document.getElementById('signatureSelect');
+    const fontSelect = document.getElementById('fontselect');
+    const signatureContainer = document.getElementById('signatureContainer');
     const sigImg = document.getElementById('sigImg');
     const sigBox = document.getElementById('sigBox');
+    const textSigInput = document.getElementById('textSigInput');
+    const textFontSize = document.getElementById('textFontSize');
+    const addTextSig = document.getElementById('addTextSig');
     const pdfInput = document.getElementById('pdfInput');
     const pdfList = document.getElementById('pdfList');
     const resetQueue = document.getElementById('resetQueue');
@@ -268,14 +407,143 @@
     const stage = document.getElementById('stage');
     const loadingdiv = document.getElementById('loadinglabel');
 
+    // placement control elements
+    const instWidth = document.getElementById('instWidth');
+    const instHeight = document.getElementById('instHeight');
+    const instLockAspect = document.getElementById('instLockAspect');
+    const instRemove = document.getElementById('instRemove');
+
+    // selection + aspect management
+    let selectedInstanceId = null;
+    let currentAspect = 1; // width / height
+
+    function deselectInstance() {
+      if (!selectedInstanceId) return;
+      const prev = stage.querySelector(`.sig-instance[data-instance-id="${selectedInstanceId}"]`);
+      if (prev) prev.classList.remove('selected');
+      selectedInstanceId = null;
+      instWidth.value = '';
+      instHeight.value = '';
+    }
+
+    function selectInstance(id, el) {
+      deselectInstance();
+      selectedInstanceId = id;
+      if (el) el.classList.add('selected');
+      // compute current pixel size and aspect
+      const r = el.getBoundingClientRect();
+      instWidth.value = Math.round(r.width);
+      instHeight.value = Math.round(r.height);
+      currentAspect = r.width / Math.max(r.height, 1);
+      // set object-fit depending on lock
+      const img = el.querySelector('img');
+      if (img) img.style.objectFit = instLockAspect.checked ? 'contain' : 'fill';
+    }
+
+    function updatePlacementControlsForSelected() {
+      if (!selectedInstanceId) return;
+      const el = stage.querySelector(`.sig-instance[data-instance-id="${selectedInstanceId}"]`);
+      if (!el) return;
+      const crect = pdfCanvas.getBoundingClientRect();
+      const w = parseInt(instWidth.value, 10) || Math.round(el.getBoundingClientRect().width);
+      const h = parseInt(instHeight.value, 10) || Math.round(el.getBoundingClientRect().height);
+      // preserve top-left: compute current offsets relative to canvas, reapply after size change
+      const beforeRect = el.getBoundingClientRect();
+      const relLeft = Math.round(beforeRect.left - crect.left);
+      const relTop = Math.round(beforeRect.top - crect.top);
+      el.style.width = w + 'px';
+      el.style.height = h + 'px';
+      el.style.left = relLeft + 'px';
+      el.style.top = relTop + 'px';
+      // update image fit
+      const img = el.querySelector('img');
+      if (img) img.style.objectFit = instLockAspect.checked ? 'contain' : 'fill';
+      // persist ratios
+      const r = el.getBoundingClientRect();
+      const newRat = getPlacementRatioFromRect(r, crect);
+      const idx = placedSigs.findIndex((p) => p.id === selectedInstanceId);
+      if (idx !== -1) placedSigs[idx] = { ...placedSigs[idx], ...newRat };
+      updateSignNowState();
+    }
+
+    instWidth.addEventListener('input', () => {
+      if (!selectedInstanceId) return;
+      const w = parseInt(instWidth.value, 10) || 1;
+      const el = stage.querySelector(`.sig-instance[data-instance-id="${selectedInstanceId}"]`);
+      if (!el) return;
+      const crect = pdfCanvas.getBoundingClientRect();
+      const beforeRect = el.getBoundingClientRect();
+      const relLeft = Math.round(beforeRect.left - crect.left);
+      const relTop = Math.round(beforeRect.top - crect.top);
+      if (instLockAspect.checked) {
+        const h = Math.max(1, Math.round(w / currentAspect));
+        instHeight.value = h;
+        el.style.width = w + 'px';
+        el.style.height = h + 'px';
+      } else {
+        el.style.width = w + 'px';
+      }
+      // reapply top-left so element doesn't move while resizing
+      el.style.left = relLeft + 'px';
+      el.style.top = relTop + 'px';
+      updatePlacementControlsForSelected();
+    });
+
+    instHeight.addEventListener('input', () => {
+      if (!selectedInstanceId) return;
+      const h = parseInt(instHeight.value, 10) || 1;
+      const el = stage.querySelector(`.sig-instance[data-instance-id="${selectedInstanceId}"]`);
+      if (!el) return;
+      const crect = pdfCanvas.getBoundingClientRect();
+      const beforeRect = el.getBoundingClientRect();
+      const relLeft = Math.round(beforeRect.left - crect.left);
+      const relTop = Math.round(beforeRect.top - crect.top);
+      if (instLockAspect.checked) {
+        const w = Math.max(1, Math.round(h * currentAspect));
+        instWidth.value = w;
+        el.style.width = w + 'px';
+        el.style.height = h + 'px';
+      } else {
+        el.style.height = h + 'px';
+      }
+      el.style.left = relLeft + 'px';
+      el.style.top = relTop + 'px';
+      updatePlacementControlsForSelected();
+    });
+
+    instLockAspect.addEventListener('change', () => {
+      if (!selectedInstanceId) return;
+      const el = stage.querySelector(`.sig-instance[data-instance-id="${selectedInstanceId}"]`);
+      if (!el) return;
+      const img = el.querySelector('img');
+      if (img) img.style.objectFit = instLockAspect.checked ? 'contain' : 'fill';
+      // recompute aspect from current rect
+      const r = el.getBoundingClientRect();
+      currentAspect = r.width / Math.max(r.height, 1);
+    });
+
+    instRemove.addEventListener('click', () => {
+      if (!selectedInstanceId) return;
+      placedSigs = placedSigs.filter((p) => p.id !== selectedInstanceId);
+      deselectInstance();
+      renderInstances();
+      updateSignNowState();
+      syncSigCheckboxesToPlacedSigs();
+    });
+
     let signatures = [];
     let docs = [];
     let selectedDocId = null;
     let selectedPage = 1;
+    // currently selected signature ids (multiple)
+    const selectedSigIds = new Set();
+    // placed signature instances on the canvas (ratios relative to canvas)
+    let placedSigs = [];
 
-    function showloading () { loadingdiv.style.display = 'block'
+    function showloading() {
+      loadingdiv.style.display = 'block'
     }
-    function hideloading() {loadingdiv.style.display = 'none'}
+    function hideloading() { loadingdiv.style.display = 'none' }
 
 
     function readAsDataURL(file) {
@@ -287,10 +555,48 @@
       });
     }
 
+    // Populate font selection with examples (common + handwriting)
+    function populateFontSelect() {
+      if (!fontSelect) return;
+      const fonts = [
+        { name: 'Roboto', css: "Roboto, sans-serif" },
+        { name: 'Open Sans', css: "'Open Sans', sans-serif" },
+        { name: 'Lato', css: "Lato, sans-serif" },
+        { name: 'Montserrat', css: "Montserrat, sans-serif" },
+        { name: 'Noto Sans', css: "'Noto Sans', sans-serif" },
+        { name: 'Anton', css: 'Anton, sans-serif' },
+        { name: 'Bebas Neue', css: "'Bebas Neue', sans-serif" },
+        { name: 'Archivo Black', css: "'Archivo Black', sans-serif" },
+        { name: 'Dynalight', css: 'Dynalight, cursive' },
+        { name: 'Pinyon Script', css: "'Pinyon Script', cursive" },
+        { name: 'Pacifico', css: 'Pacifico, cursive' },
+        { name: 'Sacramento', css: 'Sacramento, cursive' },
+        { name: 'Great Vibes', css: 'Great Vibes, cursive' },
+        { name: 'Dancing Script', css: "'Dancing Script', cursive" },
+        { name: 'Satisfy', css: 'Satisfy, cursive' }
+      ];
+
+      fonts.forEach((f, i) => {
+        const opt = document.createElement('option');
+        opt.value = f.css;
+        opt.textContent = f.name;
+        opt.style.fontFamily = f.css;
+        fontSelect.appendChild(opt);
+      });
+      // default to Roboto if present
+      fontSelect.value = "Roboto, sans-serif";
+    }
+
+    populateFontSelect();
+
     function loadSignatures() {
       signatures = JSON.parse(localStorage.getItem('pdf_signer_signatures') || '[]');
       if (!Array.isArray(signatures)) signatures = [];
+      // clear enabled selection and placed instances by default
+      selectedSigIds.clear();
+      placedSigs = [];
       renderSignatureOptions();
+      updateSigBoxPreview();
     }
 
     function saveSignatures() {
@@ -298,41 +604,140 @@
     }
 
     function renderSignatureOptions() {
-      signatureSelect.innerHTML = '';
+      signatureContainer.innerHTML = '';
       if (!signatures.length) {
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = 'No signature saved';
-        signatureSelect.append(opt);
+        const empty = document.createElement('div');
+        empty.className = 'muted';
+        empty.textContent = 'No signature saved';
+        signatureContainer.append(empty);
         sigBox.style.display = 'none';
         return;
       }
 
-      signatures.forEach((s, i) => {
-        const opt = document.createElement('option');
-        opt.value = String(i);
-        opt.textContent = `${s.name || `Signature ${i + 1}`}`;
-        signatureSelect.append(opt);
-      });
+      // when rendering options, determine checked state per current doc+page
+      signatures.forEach((s) => {
+        const card = document.createElement('div');
+        card.className = 'sig-card';
+        card.dataset.sigId = s.id;
 
-      signatureSelect.value = '0';
-      applySelectedSignature();
+        const img = document.createElement('img');
+        img.src = s.dataUrl;
+        img.alt = s.name || 'signature';
+
+       //const name = document.createElement('div');
+       //name.className = 'sig-name';
+       //name.textContent = s.name || '';
+
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.dataset.sigId = s.id;
+        // checked if this signature has a placed instance on the current doc+page
+        const present = placedSigs.some((p) => p.sigId === s.id && p.docId === selectedDocId && p.page === selectedPage);
+        chk.checked = present;
+        chk.addEventListener('change', () => {
+          const sid = chk.dataset.sigId;
+          if (chk.checked) {
+            // enable: ensure a single placed instance for this signature on current doc+page
+            selectedSigIds.add(sid);
+            ensurePlacedForSignature(sid);
+          } else {
+            // disable: remove any placed instance for this signature on current doc+page
+            selectedSigIds.delete(sid);
+            placedSigs = placedSigs.filter((p) => !(p.sigId === sid && p.docId === selectedDocId && p.page === selectedPage));
+            renderInstances();
+          }
+          updateSigBoxPreview();
+          updateSignNowState();
+        });
+
+        const rm = document.createElement('button');
+        rm.type = 'button';
+        rm.className = 'remove-sig';
+        rm.title = 'Remove this item';
+        rm.textContent = '✖';
+        rm.style.background = 'transparent';
+        rm.style.border = 'none';
+        rm.style.color = 'var(--danger)';
+        rm.style.cursor = 'pointer';
+        rm.style.fontSize = '14px';
+        rm.style.marginTop = '4px';
+        rm.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          const sid = s.id;
+          if (!confirm('Remove this saved item?')) return;
+          signatures = signatures.filter((x) => x.id !== sid);
+          saveSignatures();
+          // remove any placed instances for this signature across all docs/pages
+          placedSigs = placedSigs.filter((p) => p.sigId !== sid);
+          selectedSigIds.delete(sid);
+          renderSignatureOptions();
+          renderInstances();
+          updateSignNowState();
+          updateSigBoxPreview();
+        });
+
+        card.append(img, chk, rm); //  card.append(img, name, chk, rm);
+        signatureContainer.append(card);
+      });
     }
 
-    function applySelectedSignature() {
-      const sig = signatures[Number(signatureSelect.value)];
-      if (!sig) {
+    // Ensure there is exactly one placed signature instance for `sigId`.
+    function ensurePlacedForSignature(sigId, ratios) {
+      // ensure single instance per signature per doc+page
+      const idx = placedSigs.findIndex((p) => p.sigId === sigId && p.docId === selectedDocId && p.page === selectedPage);
+      if (idx !== -1) {
+        if (ratios) placedSigs[idx] = { ...placedSigs[idx], ...ratios };
+        renderInstances();
+        return;
+      }
+
+      const crect = pdfCanvas.getBoundingClientRect();
+      const defaultRat = ratios || getDefaultPlacementRatios(crect);
+      placedSigs.push({ id: crypto.randomUUID(), sigId, docId: selectedDocId, page: selectedPage, ...defaultRat });
+      renderInstances();
+      // select the newly created instance to allow immediate sizing
+      setTimeout(() => {
+        const last = placedSigs[placedSigs.length - 1];
+        if (last) {
+          const el = stage.querySelector(`.sig-instance[data-instance-id="${last.id}"]`);
+          if (el) selectInstance(last.id, el);
+        }
+      }, 0);
+      updateSignNowState();
+      syncSigCheckboxesToPlacedSigs();
+    }
+
+    function getDefaultPlacementRatios(crect) {
+      // smaller default size (compact, ~12px line-height feel)
+      if (!crect || !crect.width) return { x: 0.05, y: 0.05, w: 0.12, h: 0.03 };
+      const w = Math.max(40, Math.round(crect.width * 0.12));
+      const h = Math.max(14, Math.round(w * 0.18));
+      const left = Math.max((crect.width - w) / 2, 0);
+      const top = Math.max((crect.height - h) / 2, 0);
+      return { x: left / crect.width, y: top / crect.height, w: w / crect.width, h: h / crect.height };
+    }
+
+    function syncSigCheckboxesToPlacedSigs() {
+      const checks = signatureContainer.querySelectorAll('input[type="checkbox"]');
+      checks.forEach((chk) => {
+        const sid = chk.dataset.sigId;
+        const present = placedSigs.some((p) => p.sigId === sid && p.docId === selectedDocId && p.page === selectedPage);
+        chk.checked = present;
+        if (present) selectedSigIds.add(sid); else selectedSigIds.delete(sid);
+      });
+    }
+
+    function updateSigBoxPreview() {
+      const sel = signatures.find((s) => selectedSigIds.has(s.id));
+      if (!sel) {
+        sigImg.src = '';
+        // don't auto-show template box; user should click canvas to place
         sigBox.style.display = 'none';
         return;
       }
-      sigImg.src = sig.dataUrl;
-      sigBox.style.display = selectedDocId ? 'block' : 'none';
-      if (!sigBox.style.width) {
-        sigBox.style.left = '20px';
-        sigBox.style.top = '20px';
-        sigBox.style.width = '160px';
-        sigBox.style.height = '80px';
-      }
+      sigImg.src = sel.dataUrl;
+      // hide template preview, placements are created via clicking stage
+      sigBox.style.display = 'none';
       updateSignNowState();
     }
 
@@ -348,12 +753,59 @@
       });
       saveSignatures();
       renderSignatureOptions();
-      signatureSelect.value = String(signatures.length - 1);
-      applySelectedSignature();
+      // by default do not auto-enable the newly added signature
+      updateSigBoxPreview();
       signatureInput.value = '';
     });
 
-    signatureSelect.addEventListener('change', applySelectedSignature);
+    // Create a PNG dataURL from text using given font size and selected font.
+    // This function awaits font loading to ensure accurate measurements.
+    async function createTextDataUrl(text, fontSize, fontFamily) {
+      const padding = Math.round(fontSize * 0.4);
+      const tmp = document.createElement('canvas');
+      const ctx = tmp.getContext('2d');
+
+      // prefer passed fontFamily, otherwise use selection, then fallback
+      let fam = fontFamily || (fontSelect ? fontSelect.value : null) || 'Segoe UI, Roboto, sans-serif';
+      // extract primary family for FontFace loading (strip fallbacks/quotes)
+      const primary = fam.split(',')[0].trim().replace(/^['"]|['"]$/g, '');
+      try {
+        if (document.fonts && document.fonts.load) {
+          await document.fonts.load(`${fontSize}px "${primary}"`);
+        }
+      } catch (e) {
+        // ignore font loading errors and continue
+      }
+
+      ctx.font = `${fontSize}px '${primary}'`;
+      const metrics = ctx.measureText(text || '');
+      const textWidth = Math.ceil(metrics.width || fontSize * (text.length || 1) * 0.6);
+      const textHeight = Math.ceil(fontSize * 1.2);
+      tmp.width = textWidth + padding * 2;
+      tmp.height = textHeight + padding * 2;
+      const ctx2 = tmp.getContext('2d');
+      ctx2.clearRect(0, 0, tmp.width, tmp.height);
+      ctx2.font = `${fontSize}px '${primary}'`;
+      ctx2.textBaseline = 'top';
+      ctx2.fillStyle = '#000';
+      ctx2.fillText(text, padding, padding);
+      return tmp.toDataURL('image/png');
+    }
+
+    addTextSig.addEventListener('click', async (e) => {
+      const txt = (textSigInput.value || '').trim();
+      if (!txt) { alert('Enter text for signature'); return; }
+      const fs = parseInt(textFontSize.value, 10) || 48;
+      const dataUrl = await createTextDataUrl(txt, fs, fontSelect ? fontSelect.value : undefined);
+      const name = `text-${txt.substring(0, 24).replace(/\s+/g, '_')}`;
+      signatures.push({ id: crypto.randomUUID(), name, type: 'image/png', dataUrl });
+      saveSignatures();
+      renderSignatureOptions();
+      // do not auto-enable per current behavior; clear input
+      textSigInput.value = '';
+      updateSigBoxPreview();
+    });
+
 
     // Clear saved signatures button
     const clearSignatures = document.getElementById('clearSignatures');
@@ -363,13 +815,14 @@
       signatures = [];
       saveSignatures();
       renderSignatureOptions();
+      selectedSigIds.clear();
       sigImg.src = '';
       sigBox.style.display = 'none';
       updateSignNowState();
     });
 
     pdfInput.addEventListener('change', async () => {
-      showloading ();
+      showloading();
       const files = Array.from(pdfInput.files || []);
       for (const file of files) {
         const bytes = await file.arrayBuffer();
@@ -411,18 +864,20 @@
       hideloading()
     });
 
-      // Reset queue handler
-      resetQueue.addEventListener('click', () => {
-        if (!docs.length) return;
-        if (!confirm('Clear all PDFs from queue?')) return;
-        docs = [];
-        selectedDocId = null;
-        selectedPage = 1;
-        renderPdfList();
-        renderMainPreview();
-        updateSignNowState();
-        pdfInput.value = '';
-      });
+    // Reset queue handler — reload page to clear state
+    resetQueue.addEventListener('click', () => {
+      location.reload();
+         //if (!docs.length) return;
+   //if (!confirm('Clear all PDFs from queue?')) return;
+   //docs = [];
+   //selectedDocId = null;
+   //selectedPage = 1;
+   //renderPdfList();
+   //renderMainPreview();
+   //updateSignNowState();
+   //pdfInput.value = '';
+   
+    });
 
     function renderPdfList() {
       pdfList.innerHTML = '';
@@ -510,18 +965,18 @@
       });
     }
 
-      function removeDocById(id) {
-        const idx = docs.findIndex((d) => d.id === id);
-        if (idx === -1) return;
-        docs.splice(idx, 1);
-        if (selectedDocId === id) {
-          selectedDocId = docs.length ? docs[0].id : null;
-          selectedPage = 1;
-        }
-        renderPdfList();
-        renderMainPreview();
-        updateSignNowState();
+    function removeDocById(id) {
+      const idx = docs.findIndex((d) => d.id === id);
+      if (idx === -1) return;
+      docs.splice(idx, 1);
+      if (selectedDocId === id) {
+        selectedDocId = docs.length ? docs[0].id : null;
+        selectedPage = 1;
       }
+      renderPdfList();
+      renderMainPreview();
+      updateSignNowState();
+    }
 
     async function renderMainPreview() {
       const doc = docs.find((d) => d.id === selectedDocId);
@@ -551,21 +1006,23 @@
       pdfCanvas.height = vp.height;
       await page.render({ canvasContext: ctx, viewport: vp }).promise;
 
-      if (signatures.length) sigBox.style.display = 'block';
+      // re-render placed instances (if any)
+      renderInstances();
+      // sync checkboxes to placements for current doc+page
+      syncSigCheckboxesToPlacedSigs();
+      updateSigBoxPreview();
     }
 
     function updateSignNowState() {
-      signNow.disabled = !signatures.length || !docs.some((d) => d.checked);
+      signNow.disabled = !placedSigs.length || !docs.some((d) => d.checked);
     }
 
-    function getPlacementRatio() {
-      const b = sigBox.getBoundingClientRect();
-      const c = pdfCanvas.getBoundingClientRect();
+    function getPlacementRatioFromRect(rect, canvasRect) {
       return {
-        x: Math.min(Math.max((b.left - c.left) / c.width, 0), 1),
-        y: Math.min(Math.max((b.top - c.top) / c.height, 0), 1),
-        w: Math.min(Math.max(b.width / c.width, 0.01), 1),
-        h: Math.min(Math.max(b.height / c.height, 0.01), 1)
+        x: Math.min(Math.max((rect.left - canvasRect.left) / canvasRect.width, 0), 1),
+        y: Math.min(Math.max((rect.top - canvasRect.top) / canvasRect.height, 0), 1),
+        w: Math.min(Math.max(rect.width / canvasRect.width, 0.01), 1),
+        h: Math.min(Math.max(rect.height / canvasRect.height, 0.01), 1)
       };
     }
 
@@ -574,34 +1031,48 @@
         signNow.disabled = true;
         signNow.textContent = 'Signing...';
 
-        const sig = signatures[Number(signatureSelect.value)] || signatures[0];
-        if (!sig) throw new Error('No signature selected.');
+        if (!placedSigs.length) throw new Error('No placed signatures. Click the preview to place signatures.');
 
-        const sigRes = await fetch(sig.dataUrl);
-        const sigBytes = await sigRes.arrayBuffer();
-        const ratio = getPlacementRatio();
         const zip = new JSZip();
 
         for (const doc of docs.filter((d) => d.checked)) {
-          // Re-read the file bytes at signing time to ensure we have a
-          // non-detached ArrayBuffer (pdf.js may transfer/modify buffers).
           let sourceBytes = doc.bytes;
           if (doc.fileRef) {
             sourceBytes = await doc.fileRef.arrayBuffer();
           }
           const bytesForPdfLib = sourceBytes instanceof ArrayBuffer ? sourceBytes.slice(0) : sourceBytes;
           const pdfDoc = await PDFDocument.load(bytesForPdfLib);
-          const isPng = sig.type?.includes('png') || sig.dataUrl.startsWith('data:image/png');
-          const img = isPng ? await pdfDoc.embedPng(sigBytes) : await pdfDoc.embedJpg(sigBytes);
 
-          for (const page of pdfDoc.getPages()) {
+          const pages = pdfDoc.getPages();
+          for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+            const page = pages[pageIndex];
+            const pnum = pageIndex + 1;
             const pw = page.getWidth();
             const ph = page.getHeight();
-            const width = pw * ratio.w;
-            const height = ph * ratio.h;
-            const x = pw * ratio.x;
-            const y = ph - (ph * ratio.y) - height;
-            page.drawImage(img, { x, y, width, height });
+
+            // find placed signatures to apply on this page
+            // apply all enabled signature instances (by sigId) to every page of each checked doc
+            const placements = placedSigs.filter((ps) => selectedSigIds.has(ps.sigId));
+            for (const ps of placements) {
+              try {
+                const sig = signatures.find((s) => s.id === ps.sigId);
+                if (!sig) continue;
+                const r = ps; // ratios x,y,w,h
+                const width = pw * r.w;
+                const height = ph * r.h;
+                const x = pw * r.x;
+                const baseY = ph - (ph * r.y);
+                const y = baseY - height;
+
+                const fetched = await fetch(sig.dataUrl);
+                const bytes = await fetched.arrayBuffer();
+                const isPng = sig.type?.includes('png') || sig.dataUrl?.startsWith('data:image/png');
+                const img = isPng ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes);
+                page.drawImage(img, { x, y, width, height });
+              } catch (innerErr) {
+                throw new Error(`Failed to embed signature ${ps.sigId} on ${doc.name} page ${ps.page}: ${innerErr?.message || innerErr}`);
+              }
+            }
           }
 
           const out = await pdfDoc.save();
@@ -618,41 +1089,156 @@
       } catch (error) {
         alert(`Signing failed: ${error.message}`);
       } finally {
-        signNow.textContent = 'Sign now';
+        signNow.textContent = 'Execute';
         updateSignNowState();
       }
     });
 
-    let drag = false;
-    let offX = 0;
-    let offY = 0;
+    // helper: render placed signature instances inside stage
+    function renderInstances() {
+      // remove existing DOM instances
+      // clear selection when re-rendering
+      deselectInstance();
+      const existing = Array.from(stage.querySelectorAll('.sig-instance'));
+      existing.forEach((el) => el.remove());
 
-    sigBox.addEventListener('pointerdown', (e) => {
-      if (e.target !== sigBox) return;
-      drag = true;
-      const r = sigBox.getBoundingClientRect();
-      offX = e.clientX - r.left;
-      offY = e.clientY - r.top;
-      sigBox.setPointerCapture(e.pointerId);
-    });
+      const crect = pdfCanvas.getBoundingClientRect();
+      placedSigs.forEach((ps) => {
+        const el = document.createElement('div');
+        el.className = 'sig-instance';
+        el.dataset.instanceId = ps.id;
+        el.dataset.sigId = ps.sigId;
+        const img = document.createElement('img');
+        const sig = signatures.find((s) => s.id === ps.sigId);
+        img.src = sig ? sig.dataUrl : '';
+        img.style.objectFit = instLockAspect && instLockAspect.checked ? 'contain' : 'fill';
+        el.appendChild(img);
 
-    sigBox.addEventListener('pointermove', (e) => {
-      if (!drag) return;
-      const c = pdfCanvas.getBoundingClientRect();
-      const b = sigBox.getBoundingClientRect();
-      const left = Math.min(Math.max(e.clientX - c.left - offX, 0), c.width - b.width);
-      const top = Math.min(Math.max(e.clientY - c.top - offY, 0), c.height - b.height);
-      sigBox.style.left = `${left}px`;
-      sigBox.style.top = `${top}px`;
-    });
+        // compute absolute position from ratios
+        // only render instances that belong to the currently selected doc+page
+        if (ps.docId !== selectedDocId || ps.page !== selectedPage) return;
+        const left = Math.round(ps.x * crect.width);
+        const top = Math.round(ps.y * crect.height);
+        const width = Math.round(ps.w * crect.width);
+        const height = Math.round(ps.h * crect.height);
+        el.style.left = `${left}px`;
+        el.style.top = `${top}px`;
+        el.style.width = `${width}px`;
+        el.style.height = `${height}px`;
 
-    function stopDrag(e) {
-      drag = false;
-      try { sigBox.releasePointerCapture(e.pointerId); } catch (_) {}
+        // drag handlers
+        let dragging = false;
+        let offX = 0, offY = 0;
+        el.addEventListener('pointerdown', (ev) => {
+          if (ev.target !== el) return;
+          dragging = true;
+          const r = el.getBoundingClientRect();
+          offX = ev.clientX - r.left;
+          offY = ev.clientY - r.top;
+          try { el.setPointerCapture(ev.pointerId); } catch (_) {}
+          // select this instance for editing
+          selectInstance(ps.id, el);
+        });
+        el.addEventListener('pointermove', (ev) => {
+          if (!dragging) return;
+          const c = pdfCanvas.getBoundingClientRect();
+          const b = el.getBoundingClientRect();
+          const left = Math.min(Math.max(ev.clientX - c.left - offX, 0), c.width - b.width);
+          const top = Math.min(Math.max(ev.clientY - c.top - offY, 0), c.height - b.height);
+          el.style.left = `${left}px`;
+          el.style.top = `${top}px`;
+        });
+        function stopDragInstance(ev) {
+          if (!dragging) return;
+          dragging = false;
+          try { el.releasePointerCapture(ev.pointerId); } catch (_) { }
+          // save new ratios
+          const crect = pdfCanvas.getBoundingClientRect();
+          // compute and preserve top-left while adjusting size for aspect lock
+          const beforeRect = el.getBoundingClientRect();
+          const relLeft = Math.round(beforeRect.left - crect.left);
+          const relTop = Math.round(beforeRect.top - crect.top);
+          let newRat = getPlacementRatioFromRect(beforeRect, crect);
+          if (selectedInstanceId === ps.id && instLockAspect.checked) {
+            const widthPx = Math.round(newRat.w * crect.width);
+            const heightPx = Math.max(1, Math.round(widthPx / currentAspect));
+            el.style.width = widthPx + 'px';
+            el.style.height = heightPx + 'px';
+            // reapply top-left
+            el.style.left = relLeft + 'px';
+            el.style.top = relTop + 'px';
+            newRat = getPlacementRatioFromRect(el.getBoundingClientRect(), crect);
+            instWidth.value = Math.round(widthPx);
+            instHeight.value = Math.round(heightPx);
+          }
+          const idx = placedSigs.findIndex((p) => p.id === ps.id);
+          if (idx !== -1) placedSigs[idx] = { ...placedSigs[idx], ...newRat };
+          updateSignNowState();
+        }
+        el.addEventListener('pointerup', stopDragInstance);
+        el.addEventListener('pointercancel', stopDragInstance);
+
+        // update ratios after native resize (on pointerup)
+        el.addEventListener('dblclick', () => {
+          // double click to remove
+          placedSigs = placedSigs.filter((p) => p.id !== ps.id);
+          renderInstances();
+          updateSignNowState();
+          // reflect removal in signature checkboxes
+          syncSigCheckboxesToPlacedSigs();
+        });
+
+        el.addEventListener('pointerup', () => {
+          const crect = pdfCanvas.getBoundingClientRect();
+          const beforeRect = el.getBoundingClientRect();
+          const relLeft = Math.round(beforeRect.left - crect.left);
+          const relTop = Math.round(beforeRect.top - crect.top);
+          let newRat = getPlacementRatioFromRect(beforeRect, crect);
+          if (selectedInstanceId === ps.id && instLockAspect.checked) {
+            const widthPx = Math.round(newRat.w * crect.width);
+            const heightPx = Math.max(1, Math.round(widthPx / currentAspect));
+            el.style.width = widthPx + 'px';
+            el.style.height = heightPx + 'px';
+            el.style.left = relLeft + 'px';
+            el.style.top = relTop + 'px';
+            newRat = getPlacementRatioFromRect(el.getBoundingClientRect(), crect);
+            instWidth.value = Math.round(widthPx);
+            instHeight.value = Math.round(heightPx);
+          }
+          const idx = placedSigs.findIndex((p) => p.id === ps.id);
+          if (idx !== -1) placedSigs[idx] = { ...placedSigs[idx], ...newRat };
+        });
+
+        stage.appendChild(el);
+      });
     }
 
-    sigBox.addEventListener('pointerup', stopDrag);
-    sigBox.addEventListener('pointercancel', stopDrag);
+    // clicking on stage (canvas area): if an instance is selected, deselect it.
+    // If no instance is selected, preserve previous behavior of placing/moving a single enabled signature.
+    stage.addEventListener('click', (e) => {
+      if (!(e.target === stage || e.target === pdfCanvas)) return;
+      if (!selectedDocId) return;
+      // If user has an instance selected, clicking the canvas should deselect it (do not relocate)
+      if (selectedInstanceId) { deselectInstance(); return; }
+
+      // if none enabled, ask user to use checkboxes to add a signature
+      if (!selectedSigIds.size) { alert('Enable a signature using the checkbox to add it to the canvas.'); return; }
+      // if multiple enabled, ask user to reposition via drag
+      if (selectedSigIds.size > 1) { alert('Multiple signatures enabled — drag an instance to reposition.'); return; }
+
+      // exactly one enabled: move that instance to click location (or create it)
+      const sid = Array.from(selectedSigIds)[0];
+      const crect = pdfCanvas.getBoundingClientRect();
+      const clickX = e.clientX - crect.left;
+      const clickY = e.clientY - crect.top;
+      // smaller click-placement defaults to match compact line-height
+      const w = Math.max(40, Math.round(crect.width * 0.12));
+      const h = Math.max(14, Math.round(w * 0.18));
+      const left = Math.min(Math.max(clickX - w/2, 0), crect.width - w);
+      const top = Math.min(Math.max(clickY - h/2, 0), crect.height - h);
+      const ratios = { x: left / crect.width, y: top / crect.height, w: w / crect.width, h: h / crect.height };
+      ensurePlacedForSignature(sid, ratios);
+    });
 
     window.addEventListener('resize', async () => {
       if (selectedDocId) await renderMainPreview();
@@ -665,13 +1251,14 @@
   </script>
   <div id="pageFooter" class="page-footer" aria-hidden="true"></div>
   <script>
-    (function(){
-      var el = document.getElementById('pageFooter');
-      if (!el) return;
-      var year = (new Date()).getFullYear();
-      var version = '1.0.0';
-      el.textContent = '©TGQASS azraful@topglove.com.my ' + year + ' — v' + version;
-    })();
+      (function () {
+        var el = document.getElementById('pageFooter');
+        if (!el) return;
+        var year = (new Date()).getFullYear();
+        var version = '1.1.1';
+        el.textContent = '© azrafulazizi@gmail.com ' + year + ' — v' + version;
+      })();
   </script>
 </body>
+
 </html>
