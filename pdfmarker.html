@@ -58,7 +58,7 @@
       flex-wrap: wrap;
       gap: 8px 10px;
       align-items: center;
-      font-size: 14px;
+      font-size: 10px;
     }
 
     .toolbar h2 {
@@ -72,10 +72,10 @@
       font: inherit;
       border: 1px solid var(--line);
       border-radius: 7px;
-      padding: 6px 10px;
+      padding: 3px 5px;
       background: #fff;
     }
-
+   input {font-size:10px}
     button {
       background: var(--brand);
       border-color: var(--brand);
@@ -90,7 +90,7 @@
 
     .muted {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 10px;
     }
 
     .preview-wrap {
@@ -308,19 +308,34 @@
         <h2 style="width: 100%;">PDF Bulk signature & marking tool</h2>
         <div class="group">
           <strong>+ Create item using Upload </strong> <br>
-          <input id="signatureInput" type="file" accept="image/png,image/jpeg,image/webp" />
+          <input id="signatureInput" type="file" accept="image/png,image/jpeg,image/webp" style="
+    width: 150px;
+">
+
           <br> <div class="muted" >
           *upload transparent .png file      </div>
         </div>
 
+          <div class="group"> <strong> Text Preset Ratio</strong> <br>
+         <label class="muted">W:</label>
+          <input id="PresetW" type="number" min="0" step="0.1" style="width:40px;border:1px solid var(--line);border-radius:2px;padding:2px 3px;" />
+          <label class="muted">H:</label>
+          <input id="presetH" type="number" min="0"  step="0.1"  style="width:40px;border:1px solid var(--line);border-radius:2px;padding:2px 3px;" />
+          <br>
+          <button id="setpreset" title="set"
+            style="margin:8px;background:transparent;border:1px solid var(--line);border-radius:6px;color:blue;padding:4px 8px;cursor:pointer">
+            Set & Reload</button>
+        </div>
+
+
         <div class="group"> <strong> + Create item using text</strong> <br>
           <label for="textSigInput">Text :</label>
           <input id="textSigInput" type="text" placeholder="Enter text"
-            style="min-width:160px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;" />
+            style="min-width:70px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;" />
          <label for="textFontSize">Font size:</label>
           <input id="textFontSize" type="number" min="8" max="300" value="48"
-            style="width:70px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;" /> <br> 
-            Font Style: <select id="fontselect" style="width:180px;"></select>
+            style="width:50px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;" /> <br> 
+            Font: <select id="fontselect" style="width:120px;"></select>
           <button id="addTextSig" title="Create text signature"
             style="margin:8px;background:transparent;border:1px solid var(--line);border-radius:6px;color:blue;padding:4px 8px;cursor:pointer">+
             Add</button>
@@ -331,9 +346,9 @@
      
         <br>
           <label class="muted">W(px):</label>
-          <input id="instWidth" type="number" min="1" style="width:70px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;" />
+          <input id="instWidth" type="number" min="1" style="width:50px;border:1px solid var(--line);border-radius:2px;padding:2px 3px;" />
           <label class="muted">H(px):</label>
-          <input id="instHeight" type="number" min="1" style="width:70px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;" />
+          <input id="instHeight" type="number" min="1" style="width:50px;border:1px solid var(--line);border-radius:2px;padding:2px 3px;" />
           <br> 
         <label style="margin-right:8px"><input id="instLockAspect" type="checkbox" /> Lock aspect</label>
           <button id="instRemove" style="background:transparent;border:1px solid var(--line);margin:5px;border-radius:6px;padding:4px 8px;color:var(--danger);cursor:pointer">Remove</button>
@@ -368,7 +383,7 @@
 
     <aside class="panel right">
       <h3 style="margin:0">PDF Queue</h3>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:10px">
         <input id="pdfInput" type="file" accept="application/pdf" multiple />
         <button id="resetQueue" title="Clear all PDF queue">Reset</button>
         <div id="loadinglabel" display="none">Loading..</div>
@@ -412,6 +427,44 @@
     const instHeight = document.getElementById('instHeight');
     const instLockAspect = document.getElementById('instLockAspect');
     const instRemove = document.getElementById('instRemove');
+    // compress width/height of new placements. Can be overridden by URL params `w` and `h`.
+    // defaults: width=0.7, height=1.7
+    (function() {
+      const params = new URLSearchParams(location.search);
+      const defaultW = 0.7;
+      const defaultH = 1.7;
+      const parsedW = parseFloat(params.get('w'));
+      const parsedH = parseFloat(params.get('h'));
+      window.placementWidthCompress = Number.isFinite(parsedW) ? parsedW : defaultW;
+      window.placementHeightCompress = Number.isFinite(parsedH) ? parsedH : defaultH;
+    })();
+    // local aliases used by script
+    const placementWidthCompress = window.placementWidthCompress;
+    const placementHeightCompress = window.placementHeightCompress;
+
+    // Preset inputs: fill and reload behavior
+    const presetWInput = document.getElementById('PresetW');
+    const presetHInput = document.getElementById('presetH');
+    const setPresetBtn = document.getElementById('setpreset');
+
+    function populatePresetInputs() {
+      if (presetWInput) presetWInput.value = Number(placementWidthCompress);
+      if (presetHInput) presetHInput.value = Number(placementHeightCompress);
+    }
+
+    if (setPresetBtn) {
+      setPresetBtn.addEventListener('click', () => {
+        const w = parseFloat(presetWInput?.value);
+        const h = parseFloat(presetHInput?.value);
+        const params = new URLSearchParams(location.search);
+        if (Number.isFinite(w)) params.set('w', String(w)); else params.delete('w');
+        if (Number.isFinite(h)) params.set('h', String(h)); else params.delete('h');
+        location.search = params.toString();
+      });
+    }
+
+    // populate on load
+    populatePresetInputs();
 
     // selection + aspect management
     let selectedInstanceId = null;
@@ -708,13 +761,15 @@
     }
 
     function getDefaultPlacementRatios(crect) {
-      // smaller default size (compact, ~12px line-height feel)
-      if (!crect || !crect.width) return { x: 0.05, y: 0.05, w: 0.12, h: 0.03 };
-      const w = Math.max(40, Math.round(crect.width * 0.12));
-      const h = Math.max(14, Math.round(w * 0.18));
-      const left = Math.max((crect.width - w) / 2, 0);
-      const top = Math.max((crect.height - h) / 2, 0);
-      return { x: left / crect.width, y: top / crect.height, w: w / crect.width, h: h / crect.height };
+      // smaller default size (compact, ~12px line-height feel) and apply width/height compression
+      if (!crect || !crect.width) return { x: 0.05, y: 0.05, w: 0.12 * placementWidthCompress, h: 0.03 * placementHeightCompress };
+      const baseW = Math.round(crect.width * 0.12);
+      const wPx = Math.max(24, Math.round(baseW * placementWidthCompress));
+      const baseH = Math.round(wPx * 0.18);
+      const hPx = Math.max(14, Math.round(baseH * placementHeightCompress));
+      const left = Math.max((crect.width - wPx) / 2, 0);
+      const top = Math.max((crect.height - hPx) / 2, 0);
+      return { x: left / crect.width, y: top / crect.height, w: wPx / crect.width, h: hPx / crect.height };
     }
 
     function syncSigCheckboxesToPlacedSigs() {
@@ -1232,8 +1287,11 @@
       const clickX = e.clientX - crect.left;
       const clickY = e.clientY - crect.top;
       // smaller click-placement defaults to match compact line-height
-      const w = Math.max(40, Math.round(crect.width * 0.12));
-      const h = Math.max(14, Math.round(w * 0.18));
+      // smaller click-placement defaults to match compact line-height and apply width/height compression
+      const baseW = Math.round(crect.width * 0.12);
+      const w = Math.max(24, Math.round(baseW * placementWidthCompress));
+      const baseH = Math.round(w * 0.18);
+      const h = Math.max(14, Math.round(baseH * placementHeightCompress));
       const left = Math.min(Math.max(clickX - w/2, 0), crect.width - w);
       const top = Math.min(Math.max(clickY - h/2, 0), crect.height - h);
       const ratios = { x: left / crect.width, y: top / crect.height, w: w / crect.width, h: h / crect.height };
@@ -1255,7 +1313,7 @@
         var el = document.getElementById('pageFooter');
         if (!el) return;
         var year = (new Date()).getFullYear();
-        var version = '1.1.1';
+        var version = '1.2.1';
         el.textContent = '© azrafulazizi@gmail.com ' + year + ' — v' + version;
       })();
   </script>
