@@ -121,8 +121,8 @@
     #sigBox {
       position: absolute;
       border: 2px dashed var(--danger);
-      min-width: 40px;
-      min-height: 20px;
+      min-width: 24px;
+      min-height: 14px;
       resize: both;
       overflow: hidden;
       cursor: move;
@@ -143,8 +143,8 @@
     .sig-instance {
       position: absolute;
       border: 2px dashed var(--brand);
-      min-width: 40px;
-      min-height: 20px;
+      min-width: 24px;
+      min-height: 14px;
       resize: both;
       overflow: hidden;
       cursor: move;
@@ -335,7 +335,7 @@
           <label class="muted">H(px):</label>
           <input id="instHeight" type="number" min="1" style="width:70px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;" />
           <br> 
-        <label style="margin-right:8px"><input id="instLockAspect" type="checkbox" checked /> Lock aspect</label>
+        <label style="margin-right:8px"><input id="instLockAspect" type="checkbox" /> Lock aspect</label>
           <button id="instRemove" style="background:transparent;border:1px solid var(--line);margin:5px;border-radius:6px;padding:4px 8px;color:var(--danger);cursor:pointer">Remove</button>
        <br>
         <div class="muted" >Uncheck Lock to stretch.</div>
@@ -708,9 +708,10 @@
     }
 
     function getDefaultPlacementRatios(crect) {
-      if (!crect || !crect.width) return { x: 0.05, y: 0.05, w: 0.25, h: 0.12 };
-      const w = Math.max(40, Math.round(crect.width * 0.25));
-      const h = Math.max(20, Math.round(w * 0.45));
+      // smaller default size (compact, ~12px line-height feel)
+      if (!crect || !crect.width) return { x: 0.05, y: 0.05, w: 0.12, h: 0.03 };
+      const w = Math.max(40, Math.round(crect.width * 0.12));
+      const h = Math.max(14, Math.round(w * 0.18));
       const left = Math.max((crect.width - w) / 2, 0);
       const top = Math.max((crect.height - h) / 2, 0);
       return { x: left / crect.width, y: top / crect.height, w: w / crect.width, h: h / crect.height };
@@ -1230,8 +1231,9 @@
       const crect = pdfCanvas.getBoundingClientRect();
       const clickX = e.clientX - crect.left;
       const clickY = e.clientY - crect.top;
-      const w = Math.max(40, Math.round(crect.width * 0.25));
-      const h = Math.max(20, Math.round(w * 0.45));
+      // smaller click-placement defaults to match compact line-height
+      const w = Math.max(40, Math.round(crect.width * 0.12));
+      const h = Math.max(14, Math.round(w * 0.18));
       const left = Math.min(Math.max(clickX - w/2, 0), crect.width - w);
       const top = Math.min(Math.max(clickY - h/2, 0), crect.height - h);
       const ratios = { x: left / crect.width, y: top / crect.height, w: w / crect.width, h: h / crect.height };
