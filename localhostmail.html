@@ -12,7 +12,7 @@
 </head>
 <body>
 
-    <h2>Direct Gmail Sender (No race)</h2>
+    <h2>Direct Gmail Sender </h2>
     
     <button id="authBtn" onclick="getToken()">1. Authorize & Login</button>
     <p id="userStatus">Not logged in.</p>
@@ -30,7 +30,7 @@
         let accessToken = null;
 
         // Configuration
-        const CLIENT_ID = 'Y80417045238-9mmbrbbt33rifgmedhb9okf9rcj64af0.apps.googleusercontent.com';
+        const CLIENT_ID = '80417045238-9mmbrbbt33rifgmedhb9okf9rcj64af0.apps.googleusercontent.com';
 
         function initClient() {
             tokenClient = google.accounts.oauth2.initTokenClient({
