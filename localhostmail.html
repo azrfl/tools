@@ -12,7 +12,7 @@
 </head>
 <body>
 
-    <h2>Direct Gmail Sender (No GAS)</h2>
+    <h2>Direct Gmail Sender (No race)</h2>
     
     <button id="authBtn" onclick="getToken()">1. Authorize & Login</button>
     <p id="userStatus">Not logged in.</p>
@@ -116,7 +116,9 @@
             reader.onload = () => resolve(reader.result);
             reader.onerror = error => reject(error);
         });
-        initClient()
+window.onload = function() {
+    initClient(); 
+};
     </script>
 </body>
 </html>
