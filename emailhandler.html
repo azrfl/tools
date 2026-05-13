@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rich Text Mail Relay</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 700px; margin: 20px auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); background-color: #fafafa; }
+        h2 { color: #1a73e8; margin-top: 0; text-align: center; }
+        .field { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #555; }
+        input { width: 100%; padding: 10px; border: 1px solid #dadce0; border-radius: 4px; box-sizing: border-box; }
+        
+        /* The Rich Text Editor Styling */
+        #bodyEditor { 
+            width: 100%; 
+            min-height: 250px; 
+            padding: 15px; 
+            border: 1px solid #dadce0; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+            background-color: white;
+            overflow-y: auto;
+            line-height: 1.5;
+        }
+        #bodyEditor:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 1px #1a73e8; }
+        
+        /* Table styling inside the editor */
+        #bodyEditor table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+        #bodyEditor th, #bodyEditor td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+
+        .auth-zone { 
+            background: #ffffff; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #e0e0e0; text-align: center;
+        }
+        .status-dot { height: 10px; width: 10px; background-color: #bbb; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .status-active { background-color: #34a853; }
+
+        button { width: 100%; padding: 14px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold; }
+        #authBtn { background-color: #1a73e8; color: white; margin-bottom: 10px; }
+        #sendBtn { background-color: #34a853; color: white; }
+        button:disabled { background-color: #dadce0; cursor: not-allowed; color: #70757a; }
+        
+        #changeAcc { background: none; color: #1a73e8; text-decoration: underline; font-size: 12px; width: auto; padding: 0; margin-top: 10px; font-weight: normal; }
+        .hint { font-size: 11px; color: #888; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+    <h2>Internal Mailer</h2>
+
+    <div class="field">
+        <label>Recipient (To)</label>
+        <input type="text" id="to" placeholder="recipient@example.com">
+    </div>
+
+    <div class="field">
+        <label>Subject</label>
+        <input type="text" id="subject">
+    </div>
+
+    <div class="field">
+        <label>Message Content</label>
+        <p class="hint">You can edit the text or tables below directly:</p>
+        <div id="bodyEditor" contenteditable="true"></div>
+    </div>
+
+    <div class="field">
+        <label>Attachment</label>
+        <input type="file" id="fileInput">
+    </div>
+
+    <div class="auth-zone">
+        <div id="userInfo" style="margin-bottom: 15px;">
+            <span id="dot" class="status-dot"></span>
+            <span id="userStatus" style="font-weight: 500;">Please Login to Send</span>
+        </div>
+        
+        <button id="authBtn" onclick="getToken()">Sign in with Google</button>
+        
+        <button id="sendBtn" onclick="sendDirect()" disabled>Send Email</button>
+        <p id="senderLabel" style="font-size: 12px; color: #666; margin-top: 10px;"></p>
+        
+        <button id="changeAcc" style="display:none;" onclick="getToken()">Switch Account</button>
+    </div>
+
+    <script>
+        let tokenClient;
+        let accessToken = null;
+        const CLIENT_ID = 'YOUR_CLIENT_ID.apps.googleusercontent.com';
+
+        // 1. Prefill from URL Parameters
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            if(params.has('to')) document.getElementById('to').value = params.get('to');
+            if(params.has('subject')) document.getElementById('subject').value = params.get('subject');
+            
+            // Prefill the DIV with HTML content
+            if(params.has('body')) {
+                // decodeURIComponent is essential for HTML strings in URLs
+                document.getElementById('bodyEditor').innerHTML = decodeURIComponent(params.get('body'));
+            }
+        });
+
+        function initClient() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email',
+                callback: async (resp) => {
+                    if (resp.access_token) {
+                        accessToken = resp.access_token;
+                        await fetchUserDetails();
+                    }
+                },
+            });
+        }
+
+        function getToken() {
+            tokenClient.requestAccessToken();
+        }
+
+        async function fetchUserDetails() {
+            const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
+            const info = await resp.json();
+            
+            document.getElementById('userStatus').innerText = "Logged in: " + info.email;
+            document.getElementById('dot').classList.add('status-active');
+            document.getElementById('senderLabel').innerText = "Sender: " + info.email;
+            document.getElementById('authBtn').style.display = 'none';
+            document.getElementById('sendBtn').disabled = false;
+            document.getElementById('changeAcc').style.display = 'inline-block';
+        }
+
+        async function sendDirect() {
+            const btn = document.getElementById('sendBtn');
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+
+            const file = document.getElementById('fileInput').files[0];
+            const to = document.getElementById('to').value;
+            const subject = document.getElementById('subject').value;
+            
+            // CRITICAL: Get content from the innerHTML of the div
+            const bodyHtml = document.getElementById('bodyEditor').innerHTML;
+
+            const boundary = "boundary_relay_123";
+            let email = [
+                `To: ${to}`,
+                `Subject: ${subject}`,
+                'MIME-Version: 1.0',
+                `Content-Type: multipart/mixed; boundary="${boundary}"`,
+                '',
+                `--${boundary}`,
+                'Content-Type: text/html; charset="UTF-8"',
+                '',
+                bodyHtml, // Using the rich HTML here
+                ''
+            ].join('\r\n');
+
+            if (file) {
+                const base64File = await toBase64(file);
+                const content = base64File.split(',')[1];
+                email += [
+                    `--${boundary}`,
+                    `Content-Type: ${file.type}; name="${file.name}"`,
+                    'Content-Transfer-Encoding: base64',
+                    `Content-Disposition: attachment; filename="${file.name}"`,
+                    '',
+                    content,
+                    ''
+                ].join('\r\n');
+            }
+            email += `--${boundary}--`;
+
+            const encodedEmail = btoa(unescape(encodeURIComponent(email)))
+                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+            try {
+                const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ raw: encodedEmail })
+                });
+
+                if (response.ok) {
+                    alert("Email successfully sent!");
+                    window.close();
+                } else {
+                    const errorData = await response.json();
+                    alert("Gmail Error: " + errorData.error.message);
+                }
+            } catch (err) {
+                alert("Network Error: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Send Email";
+            }
+        }
+
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    </script>
+
+    <script src="https://accounts.google.com/gsi/client" onload="initClient()" async defer></script>
+</body>
+</html>
