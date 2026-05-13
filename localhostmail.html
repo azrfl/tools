@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>Direct Gmail API Sender</title>
-    <script src="https://accounts.google.com/gsi/client" onload="initClient()"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
     <style>
         body { font-family: sans-serif; max-width: 600px; margin: 20px auto; display: flex; flex-direction: column; gap: 10px; }
         input, textarea { padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
@@ -116,6 +116,7 @@
             reader.onload = () => resolve(reader.result);
             reader.onerror = error => reject(error);
         });
+        initClient()
     </script>
 </body>
 </html>
