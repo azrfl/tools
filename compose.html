@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rich Text Mail Relay</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 700px; margin: 20px auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); background-color: #fafafa; }
+        h2 { color: #1a73e8; margin-top: 0; text-align: center; }
+        .field { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #555; }
+        input { width: 100%; padding: 10px; border: 1px solid #dadce0; border-radius: 4px; box-sizing: border-box; }
+        
+        /* The Rich Text Editor Styling */
+        #bodyEditor { 
+            width: 100%; 
+            min-height: 250px; 
+            padding: 15px; 
+            border: 1px solid #dadce0; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+            background-color: white;
+            overflow-y: auto;
+            line-height: 1.5;
+        }
+        #bodyEditor:focus { outline: none; border-color: #1a73e8; box-shadow: 0 0 0 1px #1a73e8; }
+        
+        /* Table styling inside the editor */
+        #bodyEditor table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+        #bodyEditor th, #bodyEditor td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+
+        .auth-zone { 
+            background: #ffffff; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #e0e0e0; text-align: center;
+        }
+        .status-dot { height: 10px; width: 10px; background-color: #bbb; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .status-active { background-color: #34a853; }
+
+        button { width: 100%; padding: 14px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold; }
+        #authBtn { background-color: #1a73e8; color: white; margin-bottom: 10px; }
+        #sendBtn { background-color: #34a853; color: white; }
+        button:disabled { background-color: #dadce0; cursor: not-allowed; color: #70757a; }
+        
+        #changeAcc { background: none; color: #1a73e8; text-decoration: underline; font-size: 12px; width: auto; padding: 0; margin-top: 10px; font-weight: normal; }
+        .hint { font-size: 11px; color: #888; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+    <h2>Internal Mailer</h2>
+
+    <div class="field">
+        <label>Recipient (To)</label>
+        <input type="text" id="to" placeholder="recipient@example.com">
+    </div>
+
+    <div class="field">
+        <label>Subject</label>
+        <input type="text" id="subject">
+    </div>
+
+    <div class="field">
+        <label>Message Content</label>
+        <p class="hint">You can edit the text or tables below directly:</p>
+        <div id="bodyEditor" contenteditable="true"></div>
+    </div>
+
+    <div class="field">
+        <label>Attachment</label>
+        <input type="file" id="fileInput">
+    </div>
+
+    <div class="auth-zone">
+        <div id="userInfo" style="margin-bottom: 15px;">
+            <span id="dot" class="status-dot"></span>
+            <span id="userStatus" style="font-weight: 500;">Please Login to Send</span>
+        </div>
+        
+        <button id="authBtn" onclick="getToken()">Sign in with Google</button>
+        
+        <button id="sendBtn" onclick="sendDirect()" disabled>Send Email</button>
+        <p id="senderLabel" style="font-size: 12px; color: #666; margin-top: 10px;"></p>
+        
+        <button id="changeAcc" style="display:none;" onclick="getToken()">Switch Account</button>
+    </div>
+
+    <script>
+let tokenClient;
+let accessToken = null;
+let expiryTimer = null; // To track the countdown
+const CLIENT_ID = '80417045238-9mmbrbbt33rifgmedhb9okf9rcj64af0.apps.googleusercontent.com';
+const TOKEN_DURATION = 3600 * 1000; // 1 hour in milliseconds
+
+window.addEventListener('DOMContentLoaded', () => {
+    // 1. Handle Prefill
+    const params = new URLSearchParams(window.location.search);
+    if(params.has('to')) document.getElementById('to').value = params.get('to');
+    if(params.has('subject')) document.getElementById('subject').value = params.get('subject');
+    if(params.has('body')) document.getElementById('bodyEditor').innerHTML = decodeURIComponent(params.get('body'));
+
+    // 2. Check Local Storage for existing token
+    checkExistingToken();
+});
+
+function checkExistingToken() {
+    const storedToken = localStorage.getItem('google_access_token');
+    const storedTime = localStorage.getItem('google_token_timestamp');
+
+    if (storedToken && storedTime) {
+        const elapsed = Date.now() - parseInt(storedTime);
+        const remaining = TOKEN_DURATION - elapsed;
+        
+        // If we have at least 30 seconds left, use it
+        if (remaining > 30000) {
+            accessToken = storedToken;
+            fetchUserDetails(remaining); // Pass remaining time to start timer
+        } else {
+            clearAuth();
+        }
+    }
+}
+
+
+async function fetchUserDetails(remainingTime) {
+    try {
+        const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${accessToken}` }
+        });
+
+        if (!resp.ok) throw new Error("Token invalid");
+        const info = await resp.json();
+        
+        // 1. Update UI
+        document.getElementById('userStatus').innerText = "Ready: " + info.email;
+        document.getElementById('dot').classList.add('status-active');
+        document.getElementById('authBtn').style.display = 'none';
+        document.getElementById('sendBtn').disabled = false;
+        document.getElementById('changeAcc').style.display = 'inline-block';
+
+        // 2. Start the "Self-Destruct" timer
+        startExpiryCountdown(remainingTime);
+
+    } catch (err) {
+        clearAuth();
+    }
+}
+      function startExpiryCountdown(ms) {
+    // Clear any existing timer first
+    if (expiryTimer) clearTimeout(expiryTimer);
+
+    console.log(`Token will expire in ${Math.round(ms/1000)} seconds`);
+
+    expiryTimer = setTimeout(() => {
+        alert("Your Google session has expired. Please login again to send.");
+        clearAuth();
+    }, ms);
+}
+
+function clearAuth() {
+    accessToken = null;
+    if (expiryTimer) clearTimeout(expiryTimer);
+    localStorage.removeItem('google_access_token');
+    localStorage.removeItem('google_token_timestamp');
+    
+    // Reset UI
+    document.getElementById('userStatus').innerText = "Session Expired";
+    document.getElementById('dot').classList.remove('status-active');
+    document.getElementById('authBtn').style.display = 'block';
+    document.getElementById('sendBtn').disabled = true;
+    document.getElementById('changeAcc').style.display = 'none';
+}
+
+// Update your initClient callback to include the full hour
+function initClient() {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email',
+        callback: async (resp) => {
+            if (resp.access_token) {
+                accessToken = resp.access_token;
+                localStorage.setItem('google_access_token', accessToken);
+                localStorage.setItem('google_token_timestamp', Date.now().toString());
+                
+                await fetchUserDetails(TOKEN_DURATION); 
+            }
+        },
+    });
+}
+      
+    </script>
+
+    <script src="https://accounts.google.com/gsi/client" onload="initClient()" async defer></script>
+</body>
+</html>
