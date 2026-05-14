@@ -2,10 +2,10 @@
 <html>
 <head>
     <title>Google Auth</title>
-    <script src="https://accounts.google.com/gsi/client" onload="initClient()"></script>
+  
 </head>
 <body>
-    <button onclick="login()" id="btn" style="display:none; padding:20px;">Click to Authorize Google Mail</button>
+    <button onclick="login()" id="btn" style="display:none; padding:10px;">Click to Authorize Google Mail</button>
     
     <script>
         let client;
@@ -34,5 +34,7 @@
 
         function login() { client.requestAccessToken(); }
     </script>
+
+      <script src="https://accounts.google.com/gsi/client" onload="initClient()"></script>
 </body>
 </html>
