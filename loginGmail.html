@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google Auth</title>
+    <script src="https://accounts.google.com/gsi/client" onload="initClient()"></script>
+</head>
+<body>
+    <button onclick="login()" id="btn" style="display:none; padding:20px;">Click to Authorize Google Mail</button>
+    
+    <script>
+        let client;
+        const params = new URLSearchParams(window.location.search);
+        const redirectUrl = params.get('redirect');
+
+        function initClient() {
+            client = google.accounts.oauth2.initTokenClient({
+                client_id: '80417045238-9mmbrbbt33rifgmedhb9okf9rcj64af0.apps.googleusercontent.com',
+                scope: 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email',
+                callback: async (resp) => {
+                    // Get email via userinfo
+                    const user = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                        headers: { Authorization: `Bearer ${resp.access_token}` }
+                    }).then(r => r.json());
+
+                    const expiryTime = Date.now() + (3600 * 1000); // 1 hour
+                    
+                    // Construct callback to helper page
+                    const finalRedirect = `${redirectUrl}?token=${resp.access_token}&email=${user.email}&expiry=${expiryTime}`;
+                    window.location.href = finalRedirect;
+                }
+            });
+            document.getElementById('btn').style.display = 'block';
+        }
+
+        function login() { client.requestAccessToken(); }
+    </script>
+</body>
+</html>
