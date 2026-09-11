@@ -2,31 +2,36 @@
 <html>
 <head>
     <title>Google Auth</title>
-  
 </head>
 <body>
     <button onclick="login()" id="btn" style="display:none; padding:10px;">Click to Authorize Google Mail</button>
     
     <script>
         let client;
-        const params = new URLSearchParams(window.location.search);
-        const redirectUrl = params.get('redirect');
 
         function initClient() {
             client = google.accounts.oauth2.initTokenClient({
                 client_id: '80417045238-9mmbrbbt33rifgmedhb9okf9rcj64af0.apps.googleusercontent.com',
                 scope: 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email',
                 callback: async (resp) => {
-                    // Get email via userinfo
-                    const user = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                        headers: { Authorization: `Bearer ${resp.access_token}` }
-                    }).then(r => r.json());
+                    if (resp.access_token) {
+                        const user = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                            headers: { Authorization: `Bearer ${resp.access_token}` }
+                        }).then(r => r.json());
 
-                    const expiryTime = Date.now() + (3600 * 1000); // 1 hour
-                    
-                    // Construct callback to helper page
-                    const finalRedirect = `${redirectUrl}?token=${resp.access_token}&email=${user.email}&expiry=${expiryTime}`;
-                    window.location.href = finalRedirect;
+                        const expiryTime = Date.now() + (3600 * 1000); // 1 hour
+
+                        // Send payload back to parent window
+                        if (window.opener) {
+                            window.opener.postMessage({
+                                type: 'GMAIL_AUTH_SUCCESS',
+                                token: resp.access_token,
+                                email: user.email,
+                                expiry: expiryTime
+                            }, '*');
+                            window.close(); // Close popup
+                        }
+                    }
                 }
             });
             document.getElementById('btn').style.display = 'block';
@@ -35,6 +40,6 @@
         function login() { client.requestAccessToken(); }
     </script>
 
-      <script src="https://accounts.google.com/gsi/client" onload="initClient()"></script>
+    <script src="https://accounts.google.com/gsi/client" onload="initClient()"></script>
 </body>
 </html>
